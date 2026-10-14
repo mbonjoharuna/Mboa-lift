@@ -121,8 +121,14 @@ FLASH_TRANSLATIONS = {
         "Could not load users.": "Impossible de charger les utilisateurs.",
         "That driver is no longer available. Ride created as PENDING.": "Ce chauffeur n'est plus disponible. Course créée en attente.",
         "Payment page error.": "Erreur sur la page de paiement.",
-        "Login error.": "Erreur de connexion.",
         "Could not load statistics.": "Impossible de charger les statistiques.",
+        "Could not load drivers.": "Impossible de charger les chauffeurs.",
+        "Driver account disabled.": "Compte chauffeur désactivé.",
+        "Could not disable driver.": "Impossible de désactiver le chauffeur.",
+        "Driver account enabled.": "Compte chauffeur activé.",
+        "Could not enable driver.": "Impossible d'activer le chauffeur.",
+        "Driver deleted.": "Chauffeur supprimé.",
+        "Could not delete driver (may have related records).": "Impossible de supprimer le chauffeur (des enregistrements y sont liés).",
     }
 }
 
@@ -415,7 +421,8 @@ def set_language(lang):
         lang = "en"
     session["lang"] = lang
     referrer = request.referrer or url_for("index")
-    if "/set-language/" in referrer:
+    # Prevent open redirect and redirect loops
+    if "/set-language/" in referrer or not (referrer.startswith(request.host_url) or referrer.startswith("/")):
         referrer = url_for("index")
     resp = make_response(redirect(referrer))
     resp.set_cookie("mboalift_language", lang, max_age=31536000, samesite="Lax")
@@ -1898,7 +1905,7 @@ def admin_logout():
 def admin_dashboard():
     """Admin overview statistics."""
     stats = {
-        "users": 0, "rides": 0, "pending": 0, "accepted": 0,
+        "users": 0, "drivers": 0, "rides": 0, "pending": 0, "accepted": 0,
         "completed": 0, "cancelled": 0,
         "pay_success": 0, "pay_pending": 0, "pay_failed": 0,
         "total_money": 0
@@ -1909,6 +1916,9 @@ def admin_dashboard():
             cur = conn.cursor(dictionary=True)
             cur.execute("SELECT COUNT(*) AS c FROM users")
             stats["users"] = cur.fetchone()["c"]
+
+            cur.execute("SELECT COUNT(*) AS c FROM drivers")
+            stats["drivers"] = cur.fetchone()["c"]
 
             cur.execute("SELECT status, COUNT(*) AS c FROM rides GROUP BY status")
             for row in cur.fetchall():
@@ -2034,6 +2044,112 @@ def admin_delete_user(user_id):
         finally:
             conn.close()
     return redirect(url_for("admin_users"))
+
+
+@app.route("/admin/drivers")
+@admin_required
+def admin_drivers():
+    """List and search drivers."""
+    search = request.args.get("q", "").strip()
+    vehicle_filter = request.args.get("vehicle_type", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    drivers = []
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor(dictionary=True)
+            sql = """
+                SELECT id, full_name, phone, email, vehicle_info, vehicle_type,
+                       current_location, availability, status, created_at,
+                       (SELECT COUNT(*) FROM rides r WHERE r.driver_id = drivers.id AND r.status = 'COMPLETED') AS completed_rides
+                FROM drivers
+                WHERE 1=1
+            """
+            params = []
+            if search:
+                sql += " AND (full_name LIKE %s OR email LIKE %s OR phone LIKE %s OR vehicle_info LIKE %s)"
+                params.extend([f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"])
+            if vehicle_filter:
+                sql += " AND vehicle_type = %s"
+                params.append(vehicle_filter)
+            if status_filter:
+                sql += " AND status = %s"
+                params.append(status_filter)
+            sql += " ORDER BY created_at DESC"
+            cur.execute(sql, params)
+            drivers = cur.fetchall()
+            cur.close()
+        except Error:
+            flash("Could not load drivers.", "warning")
+        finally:
+            conn.close()
+    return render_template(
+        "admin/drivers.html",
+        drivers=drivers,
+        search=search,
+        vehicle_filter=vehicle_filter,
+        status_filter=status_filter
+    )
+
+
+@app.route("/admin/driver/<int:driver_id>/disable", methods=["POST"])
+@admin_required
+def admin_disable_driver(driver_id):
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE drivers SET status = 'disabled' WHERE id = %s",
+                (driver_id,)
+            )
+            conn.commit()
+            flash("Driver account disabled.", "success")
+            cur.close()
+        except Error:
+            flash("Could not disable driver.", "danger")
+        finally:
+            conn.close()
+    return redirect(url_for("admin_drivers"))
+
+
+@app.route("/admin/driver/<int:driver_id>/enable", methods=["POST"])
+@admin_required
+def admin_enable_driver(driver_id):
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE drivers SET status = 'active' WHERE id = %s",
+                (driver_id,)
+            )
+            conn.commit()
+            flash("Driver account enabled.", "success")
+            cur.close()
+        except Error:
+            flash("Could not enable driver.", "danger")
+        finally:
+            conn.close()
+    return redirect(url_for("admin_drivers"))
+
+
+@app.route("/admin/driver/<int:driver_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_driver(driver_id):
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM drivers WHERE id = %s", (driver_id,))
+            conn.commit()
+            flash("Driver deleted.", "success")
+            cur.close()
+        except Error:
+            flash("Could not delete driver (may have related records).", "danger")
+        finally:
+            conn.close()
+    return redirect(url_for("admin_drivers"))
 
 
 @app.route("/admin/rides")
@@ -2316,6 +2432,19 @@ def api_ai_chat():
 
     reply = get_ai_response(user_message, context if context else None)
     return jsonify({"reply": reply})
+
+
+# ============================================================
+# ERROR HANDLERS
+# ============================================================
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("500.html"), 500
 
 
 # ============================================================

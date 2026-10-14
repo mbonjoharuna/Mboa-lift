@@ -36,6 +36,7 @@
                 {% elif session.get('admin_id') %}
                     <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Admin Dashboard</a>
                     <a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}">Users</a>
+                    <a href="{{ url_for('admin_drivers') }}" class="{% if request.endpoint == 'admin_drivers' %}active{% endif %}">Drivers</a>
                     <a href="{{ url_for('admin_rides') }}" class="{% if request.endpoint == 'admin_rides' %}active{% endif %}">Rides</a>
                     <a href="{{ url_for('admin_payments') }}" class="{% if request.endpoint == 'admin_payments' %}active{% endif %}">Payments</a>
                     <a href="{{ url_for('admin_logout') }}" class="btn-outline">Logout</a>

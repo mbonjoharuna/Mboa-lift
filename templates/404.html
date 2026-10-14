@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}404 - Page Non Trouvée | MboaLift{% endblock %}
+
+{% block content %}
+<div class="form-card" style="max-width:540px;text-align:left;margin:40px auto;">
+    <div class="page-header" style="margin-bottom:16px;">
+        <div class="badge-pill" style="background:#fee2e2;color:#991b1b;">⚠️ Erreur 404</div>
+        <h1 style="font-size:1.8rem;margin-top:8px;">Itinéraire introuvable / Route Not Found</h1>
+        <p style="color:#6b7280;">Cette page ou course n'existe pas ou a été déplacée dans Douala.</p>
+    </div>
+
+    <div style="padding:16px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin-bottom:20px;">
+        <p style="margin-bottom:8px;"><strong>Que souhaitez-vous faire ?</strong></p>
+        <ul style="list-style:disc;margin-left:20px;line-height:1.8;color:#4b5563;">
+            <li>Revenir à la page d'accueil de MboaLift</li>
+            <li>Accéder à votre tableau de bord passager ou chauffeur</li>
+            <li>Consulter vos courses en cours ou commander un trajet</li>
+        </ul>
+    </div>
+
+    <div class="quick-actions" style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('index') }}" class="btn-primary">Retour à l'accueil</a>
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Mon Tableau de Bord</a>
+        {% elif session.get('driver_id') %}
+            <a href="{{ url_for('driver_dashboard') }}" class="btn-outline">Espace Chauffeur</a>
+        {% elif session.get('admin_id') %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-outline">Tableau Admin</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn-outline">Connexion</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

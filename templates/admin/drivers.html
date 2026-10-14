@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Manage Drivers - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">⚙️ Administration Douala</div>
+    <h1>Gestion des Chauffeurs</h1>
+    <p>Supervisez les chauffeurs de Bendskin (moto-taxis), Taxis Jaunes et Voitures Confort.</p>
+</div>
+
+<form method="GET" action="{{ url_for('admin_drivers') }}" class="search-form">
+    <input type="text" name="q" value="{{ search }}" placeholder="Recherche par nom, téléphone, email ou véhicule...">
+    <select name="vehicle_type">
+        <option value="">Tous les véhicules</option>
+        <option value="bendskin" {% if vehicle_filter == 'bendskin' %}selected{% endif %}>🏍️ Bendskin (Moto)</option>
+        <option value="taxi" {% if vehicle_filter == 'taxi' %}selected{% endif %}>🚕 Taxi Jaune</option>
+        <option value="comfort" {% if vehicle_filter == 'comfort' %}selected{% endif %}>🚗 Confort (VIP)</option>
+    </select>
+    <select name="status">
+        <option value="">Tous les statuts</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Actif</option>
+        <option value="disabled" {% if status_filter == 'disabled' %}selected{% endif %}>Désactivé</option>
+    </select>
+    <button type="submit" class="btn-primary btn-sm">Filtrer</button>
+</form>
+
+{% if drivers %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Chauffeur</th>
+                <th>Mode</th>
+                <th>Véhicule</th>
+                <th>Secteur Douala</th>
+                <th>Disponibilité</th>
+                <th>Statut</th>
+                <th>Courses</th>
+                <th>Inscrit le</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in drivers %}
+            <tr>
+                <td>#{{ d.id }}</td>
+                <td>
+                    <strong>{{ d.full_name }}</strong><br>
+                    <small>📞 {{ d.phone }} | ✉️ {{ d.email }}</small>
+                </td>
+                <td>
+                    {% if d.vehicle_type == 'bendskin' %}
+                        <span class="badge badge-bendskin">🏍️ Bendskin</span>
+                    {% elif d.vehicle_type == 'comfort' %}
+                        <span class="badge badge-comfort">🚗 Confort</span>
+                    {% else %}
+                        <span class="badge badge-taxi">🚕 Taxi Jaune</span>
+                    {% endif %}
+                </td>
+                <td>{{ d.vehicle_info or '-' }}</td>
+                <td>📍 {{ d.current_location or 'Non défini' }}</td>
+                <td>
+                    {% if d.availability == 'free' %}
+                        <span class="badge badge-success">Libre (free)</span>
+                    {% else %}
+                        <span class="badge badge-warning">En course (busy)</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ d.status }}">{{ d.status }}</span></td>
+                <td><strong>{{ d.completed_rides }}</strong></td>
+                <td>{{ d.created_at.strftime('%d/%m/%Y') if d.created_at else '-' }}</td>
+                <td class="actions">
+                    {% if d.status == 'active' %}
+                    <form method="POST" action="{{ url_for('admin_disable_driver', driver_id=d.id) }}"
+                          style="display:inline" onsubmit="return confirm('Désactiver ce compte chauffeur ?');">
+                        <button type="submit" class="btn-outline btn-sm">Désactiver</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('admin_enable_driver', driver_id=d.id) }}"
+                          style="display:inline">
+                        <button type="submit" class="btn-primary btn-sm">Activer</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin_delete_driver', driver_id=d.id) }}"
+                          style="display:inline" onsubmit="return confirm('SUPPRIMER définitivement ce chauffeur ?');">
+                        <button type="submit" class="btn-danger btn-sm">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Aucun chauffeur trouvé.</p>
+{% endif %}
+{% endblock %}

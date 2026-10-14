@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}500 - Erreur Serveur | MboaLift{% endblock %}
+
+{% block content %}
+<div class="form-card" style="max-width:540px;text-align:left;margin:40px auto;">
+    <div class="page-header" style="margin-bottom:16px;">
+        <div class="badge-pill" style="background:#fee2e2;color:#991b1b;">⚠️ Erreur 500</div>
+        <h1 style="font-size:1.8rem;margin-top:8px;">Erreur interne temporaire / Server Error</h1>
+        <p style="color:#6b7280;">Un incident technique temporaire s'est produit lors du traitement de votre demande.</p>
+    </div>
+
+    <div style="padding:16px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin-bottom:20px;">
+        <p style="color:#4b5563;">
+            Vos données de course et paiements Mobile Money restent protégés. Veuillez recharger la page ou revenir à l'accueil.
+        </p>
+    </div>
+
+    <div class="quick-actions" style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('index') }}" class="btn-primary">Retour à l'accueil</a>
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Mon Tableau de Bord</a>
+        {% elif session.get('driver_id') %}
+            <a href="{{ url_for('driver_dashboard') }}" class="btn-outline">Espace Chauffeur</a>
+        {% elif session.get('admin_id') %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-outline">Tableau Admin</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
