@@ -187,6 +187,33 @@ LOCATIONS = [
     "Bonabéri", "Aéroport", "Japoma", "Cité des Palmiers"
 ]
 
+DOUALA_COORDINATES = {
+    "Akwa": {"lat": 4.0503, "lng": 9.6979, "desc": "Cœur commercial & Boulevard de la Liberté"},
+    "Bonanjo": {"lat": 4.0435, "lng": 9.6894, "desc": "Centre administratif, banques & Port"},
+    "Deido": {"lat": 4.0628, "lng": 9.7105, "desc": "Rond-Point Deido & Rue de la Joie"},
+    "Bonamoussadi": {"lat": 4.0894, "lng": 9.7364, "desc": "Grand pôle résidentiel et commercial Douala 5e"},
+    "Makepe": {"lat": 4.0805, "lng": 9.7428, "desc": "Zone universitaire & résidentielle"},
+    "Bépanda": {"lat": 4.0592, "lng": 9.7289, "desc": "Stade de Bépanda & secteur populaire"},
+    "Bonapriso": {"lat": 4.0322, "lng": 9.6975, "desc": "Quartier d'affaires, restaurants & ambassades"},
+    "Bali": {"lat": 4.0381, "lng": 9.6953, "desc": "Rue Mandessi Bell & liaison Akwa-Bonanjo"},
+    "New Bell": {"lat": 4.0325, "lng": 9.7161, "desc": "Marché Central & Marché Nkololoun"},
+    "Ndokoti": {"lat": 4.0441, "lng": 9.7397, "desc": "Carrefour Ndokoti & hub industriel"},
+    "Logbessou": {"lat": 4.0986, "lng": 9.7642, "desc": "Campus universitaire & axe Est"},
+    "Bonabéri": {"lat": 4.0722, "lng": 9.6644, "desc": "Rive droite après le Pont du Wouri"},
+    "Aéroport": {"lat": 4.0118, "lng": 9.7194, "desc": "Aéroport International de Douala (DLA)"},
+    "Japoma": {"lat": 3.9875, "lng": 9.8025, "desc": "Complexe Sportif Japoma & sortie Yaoundé"},
+    "Cité des Palmiers": {"lat": 4.0508, "lng": 9.7558, "desc": "Zone urbaine Douala 3e"},
+}
+
+DOUALA_LANDMARKS = [
+    {"name": "Pont du Wouri", "lat": 4.0610, "lng": 9.6845, "type": "bridge", "icon": "🌉", "tip": "Liaison vitale Bonabéri ↔ Deido"},
+    {"name": "Rond-Point Deido", "lat": 4.0632, "lng": 9.7118, "type": "roundabout", "icon": "🔄", "tip": "Carrefour stratégique Douala Nord"},
+    {"name": "Carrefour Ndokoti", "lat": 4.0441, "lng": 9.7397, "type": "junction", "icon": "🚦", "tip": "Hub multimodal Bendskins & Taxis"},
+    {"name": "Boulevard de la Liberté (Akwa)", "lat": 4.0515, "lng": 9.6965, "type": "commercial", "icon": "🛍️", "tip": "Centre d'affaires & boutiques Akwa"},
+    {"name": "Place du Gouvernement (Bonanjo)", "lat": 4.0428, "lng": 9.6885, "type": "admin", "icon": "🏛️", "tip": "Sièges administratifs & Palais de Justice"},
+    {"name": "Aéroport Int. de Douala", "lat": 4.0118, "lng": 9.7194, "type": "airport", "icon": "✈️", "tip": "Hub aérien international (DLA)"},
+]
+
 # Base fares (XAF) for Standard Yellow Taxi. Symmetric for simplicity.
 FARE_MATRIX = {
     ("Akwa", "Bonanjo"): 700,
@@ -724,17 +751,24 @@ def driver_dashboard():
                 """,
                 (driver_id,)
             )
-            active_mission = cur.fetchone()
+            # Fetch driver profile for location
+            cur.execute("SELECT current_location, vehicle_type, vehicle_info FROM drivers WHERE id = %s", (driver_id,))
+            driver_info = cur.fetchone() or {}
+
             cur.close()
         except Error:
+            driver_info = {}
             flash("Could not load driver stats.", "warning")
         finally:
             conn.close()
+    else:
+        driver_info = {}
 
     return render_template(
         "driver/dashboard.html",
         stats=stats,
         active_mission=active_mission,
+        driver=driver_info,
         driver_name=session.get("driver_name")
     )
 
@@ -2381,6 +2415,177 @@ def api_nearby_drivers():
         finally:
             conn.close()
     return jsonify({"drivers": drivers, "pickup": pickup})
+
+
+@app.route("/api/map-data")
+def api_map_data():
+    """
+    Return Douala coordinates, landmarks, active nearby free drivers,
+    and pending available rides (for drivers) in JSON for the interactive map.
+    """
+    conn = get_db()
+    active_drivers = []
+    available_rides = []
+    if conn:
+        try:
+            cur = conn.cursor(dictionary=True)
+            # Free active drivers
+            cur.execute(
+                """SELECT id, full_name, phone, vehicle_info, vehicle_type, current_location
+                   FROM drivers
+                   WHERE status = 'active' AND availability = 'free' AND current_location IS NOT NULL"""
+            )
+            for d in cur.fetchall():
+                loc = d.get("current_location")
+                coords = DOUALA_COORDINATES.get(loc)
+                if coords:
+                    active_drivers.append({
+                        "id": d["id"],
+                        "name": d["full_name"],
+                        "phone": d["phone"],
+                        "vehicle_type": d["vehicle_type"],
+                        "vehicle_info": d["vehicle_info"] or "",
+                        "location": loc,
+                        "lat": coords["lat"],
+                        "lng": coords["lng"]
+                    })
+
+            # Pending rides for drivers
+            cur.execute(
+                """SELECT r.id, r.pickup, r.destination, r.fare, r.vehicle_type, u.full_name AS rider_name
+                   FROM rides r
+                   JOIN users u ON r.user_id = u.id
+                   WHERE r.status = 'PENDING'
+                   ORDER BY r.created_at DESC LIMIT 10"""
+            )
+            for r in cur.fetchall():
+                p_coords = DOUALA_COORDINATES.get(r["pickup"])
+                d_coords = DOUALA_COORDINATES.get(r["destination"])
+                available_rides.append({
+                    "id": r["id"],
+                    "pickup": r["pickup"],
+                    "destination": r["destination"],
+                    "fare": float(r["fare"]),
+                    "vehicle_type": r["vehicle_type"],
+                    "rider_name": r["rider_name"],
+                    "pickup_lat": p_coords["lat"] if p_coords else None,
+                    "pickup_lng": p_coords["lng"] if p_coords else None,
+                    "dest_lat": d_coords["lat"] if d_coords else None,
+                    "dest_lng": d_coords["lng"] if d_coords else None,
+                })
+            cur.close()
+        except Error:
+            pass
+        finally:
+            conn.close()
+
+    return jsonify({
+        "center": {"lat": 4.0511, "lng": 9.7150},
+        "coordinates": DOUALA_COORDINATES,
+        "landmarks": DOUALA_LANDMARKS,
+        "active_drivers": active_drivers,
+        "available_rides": available_rides
+    })
+
+
+@app.route("/api/ride-status/<int:ride_id>")
+def api_ride_status(ride_id):
+    """
+    Return real-time live status, driver assignment, and ETA progress for a ride.
+    """
+    user_id = session.get("user_id")
+    driver_id = session.get("driver_id")
+    admin_id = session.get("admin_id")
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database error"}), 500
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """
+            SELECT r.id, r.user_id, r.driver_id, r.pickup, r.destination, r.passengers,
+                   r.vehicle_type, r.fare, r.status, r.created_at,
+                   u.full_name AS rider_name, u.phone AS rider_phone,
+                   d.full_name AS driver_name, d.phone AS driver_phone,
+                   d.vehicle_info, d.current_location AS driver_location,
+                   (SELECT status FROM payments p WHERE p.ride_id = r.id ORDER BY p.created_at DESC LIMIT 1) AS payment_status,
+                   (SELECT id FROM payments p WHERE p.ride_id = r.id ORDER BY p.created_at DESC LIMIT 1) AS payment_id
+            FROM rides r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN drivers d ON r.driver_id = d.id
+            WHERE r.id = %s
+            """,
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        cur.close()
+        if not ride:
+            return jsonify({"error": "Ride not found"}), 404
+
+        # Security check: must be logged in as rider, driver, or admin
+        if not (admin_id or (user_id and ride["user_id"] == user_id) or (driver_id and ride["driver_id"] == driver_id)):
+            return jsonify({"error": "Unauthorized"}), 403
+
+        status = ride["status"]
+        step = 1
+        label = "Recherche d'un chauffeur disponible..."
+        eta = "1-3 min"
+
+        if status == "PENDING":
+            step = 1
+            label = "Recherche d'un chauffeur à proximité..."
+            eta = "1-3 min"
+        elif status == "ACCEPTED":
+            step = 2
+            dname = ride["driver_name"] or "assigné"
+            label = f"Chauffeur {dname} en route vers {ride['pickup']}"
+            eta = "2-4 min"
+        elif status == "IN_PROGRESS":
+            step = 3
+            label = f"Course en cours vers {ride['destination']}"
+            eta = "En route"
+        elif status == "COMPLETED":
+            step = 4
+            label = "Arrivé à destination ! Course terminée."
+            eta = "Arrivé"
+        elif status == "CANCELLED":
+            step = 0
+            label = "Course annulée"
+            eta = "Annulé"
+
+        p_coords = DOUALA_COORDINATES.get(ride["pickup"])
+        d_coords = DOUALA_COORDINATES.get(ride["destination"])
+        drv_coords = DOUALA_COORDINATES.get(ride["driver_location"])
+
+        return jsonify({
+            "id": ride["id"],
+            "status": status,
+            "step": step,
+            "label": label,
+            "eta": eta,
+            "pickup": ride["pickup"],
+            "destination": ride["destination"],
+            "pickup_coords": p_coords,
+            "dest_coords": d_coords,
+            "driver_coords": drv_coords,
+            "fare": float(ride["fare"]),
+            "vehicle_type": ride["vehicle_type"],
+            "rider_name": ride["rider_name"],
+            "rider_phone": ride["rider_phone"],
+            "driver_name": ride["driver_name"],
+            "driver_phone": ride["driver_phone"],
+            "vehicle_info": ride["vehicle_info"],
+            "driver_location": ride["driver_location"],
+            "payment_status": ride["payment_status"],
+            "payment_id": ride["payment_id"],
+            "is_paid": ride["payment_status"] == "SUCCESSFUL"
+        })
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 @app.route("/api/ai-chat", methods=["POST"])

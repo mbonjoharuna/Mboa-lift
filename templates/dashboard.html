@@ -8,64 +8,109 @@
 </div>
 
 {% if active_ride %}
-<div class="active-ride-card">
-    <div class="active-ride-header">
-        <div class="pulse-indicator pulse-{{ active_ride.status|lower }}"></div>
-        <div class="active-ride-title">
-            {% if active_ride.status == 'ACCEPTED' %}
-                <strong>Chauffeur en route</strong> · Course #{{ active_ride.id }}
-            {% else %}
-                <strong>Course en cours</strong> · Course #{{ active_ride.id }}
-            {% endif %}
+<div class="live-tracker-card status-{{ active_ride.status|lower }}"
+     data-active-ride-id="{{ active_ride.id }}"
+     data-active-ride-status="{{ active_ride.status }}">
+    <div class="tracker-header">
+        <div class="tracker-title-group">
+            <div class="tracker-eyebrow">
+                <span class="map-radar-dot"></span>
+                <span>Suivi Course en direct · Course #{{ active_ride.id }}</span>
+            </div>
+            <div class="tracker-main-status">
+                {% if active_ride.status == 'PENDING' %}
+                    Recherche d'un chauffeur disponible... ⏳
+                {% elif active_ride.status == 'ACCEPTED' %}
+                    Chauffeur en route vers {{ active_ride.pickup }} 🚗
+                {% elif active_ride.status == 'IN_PROGRESS' %}
+                    Course en cours vers {{ active_ride.destination }} 📍
+                {% elif active_ride.status == 'COMPLETED' %}
+                    Arrivé à destination ! Course terminée ✅
+                {% else %}
+                    {{ active_ride.status }}
+                {% endif %}
+            </div>
         </div>
-        <span class="badge badge-{{ active_ride.status|lower }}">{{ active_ride.status }}</span>
+        <span class="tracker-eta-badge">
+            {% if active_ride.status == 'PENDING' %}⏱️ 1-3 min
+            {% elif active_ride.status == 'ACCEPTED' %}⏱️ 2-4 min
+            {% elif active_ride.status == 'IN_PROGRESS' %}📍 En route
+            {% else %}✅ Terminé{% endif %}
+        </span>
     </div>
-    <div class="active-ride-body">
-        <div class="active-ride-route">
-            <span class="route-point start">📍 <strong>{{ active_ride.pickup }}</strong></span>
-            <span class="route-arrow">➔</span>
-            <span class="route-point end">🎯 <strong>{{ active_ride.destination }}</strong></span>
+
+    <!-- 4-Step Interactive Progress Stepper -->
+    <div class="stepper-container">
+        <div class="stepper-progress-bar">
+            <div class="stepper-line-fill" style="width: {% if active_ride.status == 'PENDING' %}12%{% elif active_ride.status == 'ACCEPTED' %}40%{% elif active_ride.status == 'IN_PROGRESS' %}75%{% else %}100%{% endif %};"></div>
+            <div class="stepper-step {% if active_ride.status == 'PENDING' %}active{% else %}completed{% endif %}">1</div>
+            <div class="stepper-step {% if active_ride.status == 'ACCEPTED' %}active{% elif active_ride.status in ['IN_PROGRESS', 'COMPLETED'] %}completed{% endif %}">2</div>
+            <div class="stepper-step {% if active_ride.status == 'IN_PROGRESS' %}active{% elif active_ride.status == 'COMPLETED' %}completed{% endif %}">3</div>
+            <div class="stepper-step {% if active_ride.status == 'COMPLETED' %}active completed{% endif %}">4</div>
         </div>
-        <div class="active-ride-details">
-            <div class="detail-item">
-                <span class="detail-label">Véhicule :</span>
-                <span class="detail-val">
-                    {% if active_ride.vehicle_type == 'bendskin' %}🏍️ Bendskin (Moto)
-                    {% elif active_ride.vehicle_type == 'comfort' %}🚗 Voiture Confort
-                    {% else %}🚕 Taxi Jaune
-                    {% endif %}
-                    {% if active_ride.vehicle_info %}({{ active_ride.vehicle_info }}){% endif %}
+        <div class="stepper-labels">
+            <div class="stepper-label-item {% if active_ride.status == 'PENDING' %}active{% endif %}">
+                <strong>1. Demande</strong><br><small>Recherche chauffeur</small>
+            </div>
+            <div class="stepper-label-item {% if active_ride.status == 'ACCEPTED' %}active{% endif %}">
+                <strong>2. Chauffeur</strong><br><small>En route vers vous</small>
+            </div>
+            <div class="stepper-label-item {% if active_ride.status == 'IN_PROGRESS' %}active{% endif %}">
+                <strong>3. En course</strong><br><small>Trajet en cours</small>
+            </div>
+            <div class="stepper-label-item {% if active_ride.status == 'COMPLETED' %}active{% endif %}">
+                <strong>4. Arrivée</strong><br><small>Paiement &amp; Avis</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Route preview -->
+    <div class="active-ride-route" style="margin-bottom:12px;">
+        <span class="route-point start">📍 <strong>{{ active_ride.pickup }}</strong></span>
+        <span class="route-arrow">➔</span>
+        <span class="route-point end">🎯 <strong>{{ active_ride.destination }}</strong></span>
+        <span class="detail-val fare-badge" style="margin-left:auto;">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
+    </div>
+
+    <!-- Assigned Driver Ribbon -->
+    <div class="tracker-driver-ribbon" style="{% if not active_ride.driver_name and active_ride.status == 'PENDING' %}display:none;{% endif %}">
+        <div class="driver-info-meta">
+            <div class="driver-avatar-circle">
+                {% if active_ride.vehicle_type == 'bendskin' %}🏍️
+                {% elif active_ride.vehicle_type == 'comfort' %}🚗
+                {% else %}🚕{% endif %}
+            </div>
+            <div class="driver-meta-text">
+                <span class="driver-name-text">{{ active_ride.driver_name or 'Chauffeur en cours d\'assignation' }}</span>
+                <span class="driver-vehicle-text">
+                    {% if active_ride.vehicle_type == 'bendskin' %}Bendskin Moto-Taxi
+                    {% elif active_ride.vehicle_type == 'comfort' %}Voiture Confort Privée
+                    {% else %}Taxi Jaune Standard{% endif %}
+                    {% if active_ride.vehicle_info %}· {{ active_ride.vehicle_info }}{% endif %}
                 </span>
             </div>
-            <div class="detail-item">
-                <span class="detail-label">Chauffeur :</span>
-                <span class="detail-val"><strong>{{ active_ride.driver_name or 'Chauffeur assigné' }}</strong></span>
-            </div>
-            {% if active_ride.driver_phone %}
-            <div class="detail-item">
-                <span class="detail-label">Contact :</span>
-                <a href="tel:{{ active_ride.driver_phone }}" class="phone-link">📞 {{ active_ride.driver_phone }}</a>
-            </div>
-            {% endif %}
-            <div class="detail-item">
-                <span class="detail-label">Tarif :</span>
-                <span class="detail-val fare-badge">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
-            </div>
         </div>
+        {% if active_ride.driver_phone %}
+        <a href="tel:{{ active_ride.driver_phone }}" class="btn-outline btn-sm driver-phone-link">
+            📞 Appeler ({{ active_ride.driver_phone }})
+        </a>
+        {% endif %}
     </div>
-    <div class="active-ride-actions">
+
+    <!-- Live Action Buttons -->
+    <div class="tracker-actions">
         <a href="https://wa.me/?text=Je%20suis%20en%20trajet%20MboaLift%20(Course%20%23{{ active_ride.id }})%20de%20{{ active_ride.pickup }}%20%C3%A0%20{{ active_ride.destination }}%20avec%20le%20chauffeur%20{{ active_ride.driver_name or 'assign%C3%A9' }}%20(Tel:%20{{ active_ride.driver_phone or '-' }}).%20Suivi%20de%20s%C3%A9curit%C3%A9%20Douala."
            target="_blank" class="btn-safety btn-sm" title="Partager ce trajet pour votre sécurité">
             🛡️ Partager ma sécurité WhatsApp
         </a>
         {% if not active_ride.is_paid %}
-            <a href="{{ url_for('payment', ride_id=active_ride.id) }}" class="btn-primary btn-sm">
+            <a href="{{ url_for('payment', ride_id=active_ride.id) }}" class="btn-primary btn-sm btn-pay-action">
                 💳 Payer par MoMo / OM
             </a>
         {% else %}
             <span class="badge badge-success">Paiement validé ✅</span>
         {% endif %}
-        <a href="{{ url_for('my_rides') }}" class="btn-outline btn-sm">Détails</a>
+        <a href="{{ url_for('my_rides') }}" class="btn-outline btn-sm">Détails de mes courses</a>
     </div>
 </div>
 {% endif %}

@@ -9,6 +9,8 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
     <title>{% block title %}MboaLift{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/map_and_tracker.css') }}">
 </head>
 <body data-language-switcher="true" data-server-lang="{{ current_lang or 'en' }}">
     <header class="header">
@@ -111,9 +113,12 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(() => {}));</script>
     <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/douala_map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ride_tracker.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

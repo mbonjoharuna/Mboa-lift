@@ -8,134 +8,172 @@
     <p>Choose your Douala destination and vehicle mode. Fast, transparent fares with MoMo & Orange Money.</p>
 </div>
 
-<div class="form-card" style="max-width:620px;">
-    <!-- Douala Traffic & Rush Hour Advisory Tip -->
-    <div class="traffic-tip">
-        <span class="traffic-tip-icon">🚦</span>
-        <div class="traffic-tip-text">
-            <strong>Conseil Trafic Douala :</strong> 
-            Aux heures de pointe sur le <strong>Pont du Wouri</strong>, <strong>Ndokoti</strong> ou <strong>Rond-Point Deido</strong>, 
-            choisissez un <strong>Bendskin 🏍️</strong> pour éviter les embouteillages !
+<div class="booking-map-grid">
+    <!-- Left Column: Ride Request Form -->
+    <div class="form-card" style="margin:0;">
+        <!-- Douala Traffic & Rush Hour Advisory Tip -->
+        <div class="traffic-tip">
+            <span class="traffic-tip-icon">🚦</span>
+            <div class="traffic-tip-text">
+                <strong>Conseil Trafic Douala :</strong> 
+                Aux heures de pointe sur le <strong>Pont du Wouri</strong>, <strong>Ndokoti</strong> ou <strong>Rond-Point Deido</strong>, 
+                choisissez un <strong>Bendskin 🏍️</strong> pour éviter les embouteillages !
+            </div>
         </div>
+
+        <form method="POST" action="{{ url_for('request_ride') }}" id="rideForm" novalidate>
+            <!-- Vehicle Type Picker (Bendskin Moto vs Taxi Jaune vs Confort) -->
+            <div class="form-group">
+                <label class="form-label-bold">Type de transport</label>
+                <div class="vehicle-picker" id="vehiclePicker">
+                    <label class="vehicle-card {% if selected_vehicle_type == 'bendskin' %}active{% endif %}">
+                        <input type="radio" name="vehicle_type" value="bendskin" {% if selected_vehicle_type == 'bendskin' %}checked{% endif %}>
+                        <div class="vehicle-icon">🏍️</div>
+                        <div class="vehicle-meta">
+                            <strong>Bendskin (Moto)</strong>
+                            <small>Anti-bouchons • 1 passager max</small>
+                        </div>
+                        <span class="vehicle-badge eco">Éco (-30%)</span>
+                    </label>
+
+                    <label class="vehicle-card {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}active{% endif %}">
+                        <input type="radio" name="vehicle_type" value="taxi" {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}checked{% endif %}>
+                        <div class="vehicle-icon">🚕</div>
+                        <div class="vehicle-meta">
+                            <strong>Taxi Jaune</strong>
+                            <small>Classique Douala • 1 à 4 passagers</small>
+                        </div>
+                        <span class="vehicle-badge standard">Populaire</span>
+                    </label>
+
+                    <label class="vehicle-card {% if selected_vehicle_type == 'comfort' %}active{% endif %}">
+                        <input type="radio" name="vehicle_type" value="comfort" {% if selected_vehicle_type == 'comfort' %}checked{% endif %}>
+                        <div class="vehicle-icon">🚗</div>
+                        <div class="vehicle-meta">
+                            <strong>Voiture Confort</strong>
+                            <small>Climatisé • Privé / Aéroport</small>
+                        </div>
+                        <span class="vehicle-badge vip">VIP</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="pickup">Pickup location (Départ)</label>
+                <input list="locationsList" id="pickup" name="pickup" required
+                       value="{{ selected_pickup or '' }}"
+                       placeholder="Type or choose (e.g. Akwa, Bonanjo, Bonabéri)">
+                <datalist id="locationsList">
+                    {% for loc in locations %}
+                    <option value="{{ loc }}">
+                    {% endfor %}
+                </datalist>
+                <small>Choisissez parmi les quartiers majeurs de Douala.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="destination">Destination (Arrivée)</label>
+                <input list="locationsList2" id="destination" name="destination" required
+                       value="{{ selected_destination or '' }}"
+                       placeholder="Type or choose (e.g. Bonamoussadi, Aéroport, Ndokoti)">
+                <datalist id="locationsList2">
+                    {% for loc in locations %}
+                    <option value="{{ loc }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div class="form-group" id="passengersGroup">
+                <label for="passengers">Number of passengers</label>
+                <input type="number" id="passengers" name="passengers"
+                       value="1" min="1" max="4" required>
+                <small id="paxNotice">Standard Taxi accepts up to 4 passengers. Bendskin accepts 1.</small>
+            </div>
+
+            <!-- Dynamic Real-time Fare Box -->
+            <div class="fare-box" id="fareBox" style="display:none;">
+                <div class="fare-row">
+                    <span>Trajet :</span>
+                    <strong><span id="farePickup">-</span> → <span id="fareDestination">-</span></strong>
+                </div>
+                <div class="fare-row">
+                    <span>Mode :</span>
+                    <strong id="fareMode">Taxi Jaune</strong>
+                </div>
+                <div class="fare-row fare-total">
+                    <span>Tarif estimé :</span>
+                    <strong id="fareAmount">-</strong>
+                </div>
+                <p class="fare-note">Tarif transparent garanti avant le départ. Paiement par MTN MoMo ou Orange Money.</p>
+            </div>
+
+            <div class="form-group" id="driversSection">
+                <label>Chauffeurs disponibles à proximité</label>
+                <div id="driversList" class="drivers-list">
+                    {% if nearby_drivers %}
+                        {% for d in nearby_drivers %}
+                        <label class="driver-option">
+                            <input type="radio" name="preferred_driver" value="{{ d.id }}">
+                            <span>
+                                <strong>{{ d.full_name }}</strong>
+                                — {{ d.current_location }}
+                                {% if d.vehicle_info %} ({{ d.vehicle_info }}){% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                        <label class="driver-option">
+                            <input type="radio" name="preferred_driver" value="" checked>
+                            <span>N'importe quel chauffeur disponible (premier à accepter)</span>
+                        </label>
+                    {% else %}
+                        <p class="empty-hint" id="noDriversHint">
+                            Indiquez votre lieu de départ pour voir les chauffeurs libres à proximité.
+                        </p>
+                    {% endif %}
+                </div>
+                <small>Zone de disponibilité basée sur la présence active déclarée du chauffeur.</small>
+            </div>
+
+            <button type="submit" class="btn-primary btn-block btn-lg" id="submitRide">
+                Commander la course
+            </button>
+        </form>
     </div>
 
-    <form method="POST" action="{{ url_for('request_ride') }}" id="rideForm" novalidate>
-        <!-- Vehicle Type Picker (Bendskin Moto vs Taxi Jaune vs Confort) -->
-        <div class="form-group">
-            <label class="form-label-bold">Type de transport</label>
-            <div class="vehicle-picker" id="vehiclePicker">
-                <label class="vehicle-card {% if selected_vehicle_type == 'bendskin' %}active{% endif %}">
-                    <input type="radio" name="vehicle_type" value="bendskin" {% if selected_vehicle_type == 'bendskin' %}checked{% endif %}>
-                    <div class="vehicle-icon">🏍️</div>
-                    <div class="vehicle-meta">
-                        <strong>Bendskin (Moto)</strong>
-                        <small>Anti-bouchons • 1 passager max</small>
-                    </div>
-                    <span class="vehicle-badge eco">Éco (-30%)</span>
-                </label>
+    <!-- Right Column: Interactive Douala Route Map -->
+    <div class="douala-map-card">
+        <div class="map-card-header">
+            <div class="map-card-title">
+                <span class="map-radar-dot"></span>
+                <span>Carte Urbaine &amp; Itinéraire Douala</span>
+            </div>
+            <span class="map-badge-live">● Trafic &amp; Chauffeurs en direct</span>
+        </div>
 
-                <label class="vehicle-card {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}active{% endif %}">
-                    <input type="radio" name="vehicle_type" value="taxi" {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}checked{% endif %}>
-                    <div class="vehicle-icon">🚕</div>
-                    <div class="vehicle-meta">
-                        <strong>Taxi Jaune</strong>
-                        <small>Classique Douala • 1 à 4 passagers</small>
-                    </div>
-                    <span class="vehicle-badge standard">Populaire</span>
-                </label>
+        <!-- Fast Landmark Shortcuts Toolbar -->
+        <div class="landmark-toolbar">
+            <span class="landmark-label">Repères :</span>
+            <button type="button" class="landmark-pill" data-location="Pont du Wouri">🌉 Pont du Wouri</button>
+            <button type="button" class="landmark-pill" data-location="Rond-Point Deido">🔄 Rd-Pt Deido</button>
+            <button type="button" class="landmark-pill" data-location="Ndokoti">🚦 Ndokoti</button>
+            <button type="button" class="landmark-pill" data-location="Akwa">🛍️ Akwa</button>
+            <button type="button" class="landmark-pill" data-location="Bonanjo">🏛️ Bonanjo</button>
+            <button type="button" class="landmark-pill" data-location="Aéroport">✈️ Aéroport</button>
+            <button type="button" class="landmark-pill" data-location="Bonabéri">🏭 Bonabéri</button>
+        </div>
 
-                <label class="vehicle-card {% if selected_vehicle_type == 'comfort' %}active{% endif %}">
-                    <input type="radio" name="vehicle_type" value="comfort" {% if selected_vehicle_type == 'comfort' %}checked{% endif %}>
-                    <div class="vehicle-icon">🚗</div>
-                    <div class="vehicle-meta">
-                        <strong>Voiture Confort</strong>
-                        <small>Climatisé • Privé / Aéroport</small>
-                    </div>
-                    <span class="vehicle-badge vip">VIP</span>
-                </label>
+        <!-- Leaflet Map Canvas -->
+        <div id="doualaMap" class="douala-map-container" role="region" aria-label="Carte interactive de Douala"></div>
+
+        <div class="map-footer-info">
+            <span style="font-size:0.78rem;">💡 <em>Astuce : Cliquez sur un repère ou quartier pour fixer le départ ou l'arrivée.</em></span>
+            <div class="map-legend">
+                <span class="map-legend-item"><span style="color:#2563eb;">📍</span> Départ</span>
+                <span class="map-legend-item"><span style="color:#dc2626;">🎯</span> Arrivée</span>
+                <span class="map-legend-item"><span style="color:#10b981;">🚕</span> Chauffeur libre</span>
             </div>
         </div>
-
-        <div class="form-group">
-            <label for="pickup">Pickup location (Départ)</label>
-            <input list="locationsList" id="pickup" name="pickup" required
-                   value="{{ selected_pickup or '' }}"
-                   placeholder="Type or choose (e.g. Akwa, Bonanjo, Bonabéri)">
-            <datalist id="locationsList">
-                {% for loc in locations %}
-                <option value="{{ loc }}">
-                {% endfor %}
-            </datalist>
-            <small>Choisissez parmi les quartiers majeurs de Douala.</small>
-        </div>
-
-        <div class="form-group">
-            <label for="destination">Destination (Arrivée)</label>
-            <input list="locationsList2" id="destination" name="destination" required
-                   value="{{ selected_destination or '' }}"
-                   placeholder="Type or choose (e.g. Bonamoussadi, Aéroport, Ndokoti)">
-            <datalist id="locationsList2">
-                {% for loc in locations %}
-                <option value="{{ loc }}">
-                {% endfor %}
-            </datalist>
-        </div>
-
-        <div class="form-group" id="passengersGroup">
-            <label for="passengers">Number of passengers</label>
-            <input type="number" id="passengers" name="passengers"
-                   value="1" min="1" max="4" required>
-            <small id="paxNotice">Standard Taxi accepts up to 4 passengers. Bendskin accepts 1.</small>
-        </div>
-
-        <!-- Dynamic Real-time Fare Box -->
-        <div class="fare-box" id="fareBox" style="display:none;">
-            <div class="fare-row">
-                <span>Trajet :</span>
-                <strong><span id="farePickup">-</span> → <span id="fareDestination">-</span></strong>
-            </div>
-            <div class="fare-row">
-                <span>Mode :</span>
-                <strong id="fareMode">Taxi Jaune</strong>
-            </div>
-            <div class="fare-row fare-total">
-                <span>Tarif estimé :</span>
-                <strong id="fareAmount">-</strong>
-            </div>
-            <p class="fare-note">Tarif transparent garanti avant le départ. Paiement par MTN MoMo ou Orange Money.</p>
-        </div>
-
-        <div class="form-group" id="driversSection">
-            <label>Chauffeurs disponibles à proximité</label>
-            <div id="driversList" class="drivers-list">
-                {% if nearby_drivers %}
-                    {% for d in nearby_drivers %}
-                    <label class="driver-option">
-                        <input type="radio" name="preferred_driver" value="{{ d.id }}">
-                        <span>
-                            <strong>{{ d.full_name }}</strong>
-                            — {{ d.current_location }}
-                            {% if d.vehicle_info %} ({{ d.vehicle_info }}){% endif %}
-                        </span>
-                    </label>
-                    {% endfor %}
-                    <label class="driver-option">
-                        <input type="radio" name="preferred_driver" value="" checked>
-                        <span>N'importe quel chauffeur disponible (premier à accepter)</span>
-                    </label>
-                {% else %}
-                    <p class="empty-hint" id="noDriversHint">
-                        Indiquez votre lieu de départ pour voir les chauffeurs libres à proximité.
-                    </p>
-                {% endif %}
-            </div>
-            <small>Zone de disponibilité basée sur la présence active déclarée du chauffeur.</small>
-        </div>
-
-        <button type="submit" class="btn-primary btn-block btn-lg" id="submitRide">
-            Commander la course
-        </button>
-    </form>
+    </div>
 </div>
 {% endblock %}
 

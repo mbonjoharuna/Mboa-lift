@@ -47,6 +47,24 @@
 </div>
 {% endif %}
 
+<!-- Live Douala Demand & Driver Position Map -->
+<div class="douala-map-card" style="margin-bottom:24px;">
+    <div class="map-card-header">
+        <div class="map-card-title">
+            <span class="map-radar-dot"></span>
+            <span>Carte de la Demande &amp; Position Chauffeur</span>
+        </div>
+        <span class="map-badge-live">
+            Secteur déclaré : <strong id="driverCurrentArea">{{ driver.current_location if driver and driver.current_location else 'Douala' }}</strong>
+        </span>
+    </div>
+    <div id="driverMap" class="douala-map-container" style="height:340px;" role="region" aria-label="Carte des demandes de courses"></div>
+    <div class="map-footer-info">
+        <span style="font-size:0.78rem;">📍 <em>Repères oranges : demandes de courses en attente à accepter immédiatement.</em></span>
+        <span style="color:#10b981;font-weight:600;font-size:0.78rem;">● Votre présence est visible aux passagers de votre secteur.</span>
+    </div>
+</div>
+
 <div class="stats-grid">
     <div class="stat-card pending">
         <div class="stat-value">{{ stats.available }}</div>
