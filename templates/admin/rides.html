@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Manage Rides - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">⚙️ Administration Douala</div>
+    <h1>Gestion des Courses</h1>
+</div>
+
+<form method="GET" action="{{ url_for('admin_rides') }}" class="search-form">
+    <input type="text" name="q" value="{{ search }}" placeholder="Recherche par nom, départ ou destination...">
+    <select name="status">
+        <option value="">Tous les statuts</option>
+        {% for s in ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary btn-sm">Filtrer</button>
+</form>
+
+{% if rides %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Mode</th>
+                <th>Passager</th>
+                <th>Itinéraire</th>
+                <th>Pax</th>
+                <th>Tarif (XAF)</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rides %}
+            <tr>
+                <td>#{{ r.id }}</td>
+                <td>
+                    {% if r.vehicle_type == 'bendskin' %}
+                        <span class="badge badge-bendskin">🏍️ Bendskin</span>
+                    {% elif r.vehicle_type == 'comfort' %}
+                        <span class="badge badge-comfort">🚗 Confort</span>
+                    {% else %}
+                        <span class="badge badge-taxi">🚕 Taxi Jaune</span>
+                    {% endif %}
+                </td>
+                <td>{{ r.full_name }}<br><small>📞 {{ r.phone }}</small></td>
+                <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                <td>{{ r.passengers }}</td>
+                <td><strong>{{ "%.0f"|format(r.fare) }}</strong></td>
+                <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                <td>{{ r.created_at.strftime('%d/%m %H:%M') if r.created_at else '-' }}</td>
+                <td class="actions">
+                    {% if r.status == 'PENDING' %}
+                    <form method="POST" action="{{ url_for('admin_accept_ride', ride_id=r.id) }}" style="display:inline">
+                        <button type="submit" class="btn-primary btn-sm">Accepter</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_cancel_ride', ride_id=r.id) }}"
+                          style="display:inline" onsubmit="return confirm('Annuler cette course ?');">
+                        <button type="submit" class="btn-danger btn-sm">Annuler</button>
+                    </form>
+                    {% elif r.status == 'ACCEPTED' %}
+                    <form method="POST" action="{{ url_for('admin_start_ride', ride_id=r.id) }}" style="display:inline">
+                        <button type="submit" class="btn-primary btn-sm">Démarrer</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_cancel_ride', ride_id=r.id) }}"
+                          style="display:inline" onsubmit="return confirm('Annuler cette course ?');">
+                        <button type="submit" class="btn-danger btn-sm">Annuler</button>
+                    </form>
+                    {% elif r.status == 'IN_PROGRESS' %}
+                    <form method="POST" action="{{ url_for('admin_complete_ride', ride_id=r.id) }}" style="display:inline">
+                        <button type="submit" class="btn-success btn-sm">Terminer ✅</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Aucune course trouvée.</p>
+{% endif %}
+{% endblock %}

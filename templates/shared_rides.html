@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Shared Rides - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Shared Rides</h1>
+    <p>Join a ride going the same way and share the cost</p>
+</div>
+
+{% if rides %}
+<div class="ride-list">
+    {% for r in rides %}
+    <div class="ride-card">
+        <div class="ride-route">
+            <strong>{{ r.pickup }}</strong>
+            <span class="arrow">→</span>
+            <strong>{{ r.destination }}</strong>
+        </div>
+        <div class="ride-meta">
+            <span>Owner: {{ r.owner_name }}</span>
+            <span>Passengers: {{ r.passengers }} + {{ r.joined }} joined</span>
+            <span>Fare: {{ "%.0f"|format(r.fare) }} XAF</span>
+            <span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span>
+        </div>
+        <form method="POST" action="{{ url_for('join_ride', ride_id=r.id) }}"
+              onsubmit="return confirm('Join this shared ride?');">
+            <button type="submit" class="btn-primary btn-sm">Join Ride</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">
+    No compatible shared rides available right now.<br>
+    <a href="{{ url_for('request_ride') }}">Request your own ride</a> instead.
+</p>
+{% endif %}
+{% endblock %}

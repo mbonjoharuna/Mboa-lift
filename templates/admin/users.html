@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Manage Users - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Users</h1>
+</div>
+
+<form method="GET" action="{{ url_for('admin_users') }}" class="search-form">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by name, email or phone...">
+    <button type="submit" class="btn-primary btn-sm">Search</button>
+</form>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.full_name }}</td>
+                <td>{{ u.phone }}</td>
+                <td>{{ u.email }}</td>
+                <td><span class="badge badge-{{ u.status }}">{{ u.status }}</span></td>
+                <td>{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
+                <td class="actions">
+                    {% if u.status == 'active' %}
+                    <form method="POST" action="{{ url_for('admin_disable_user', user_id=u.id) }}"
+                          style="display:inline" onsubmit="return confirm('Disable this user?');">
+                        <button type="submit" class="btn-outline btn-sm">Disable</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('admin_enable_user', user_id=u.id) }}"
+                          style="display:inline">
+                        <button type="submit" class="btn-primary btn-sm">Enable</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}"
+                          style="display:inline" onsubmit="return confirm('DELETE this user permanently?');">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">No users found.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>AI Assistant</h1>
+    <p>Ask questions about rides, fares, payments and more</p>
+</div>
+
+<div class="ai-layout">
+    <div class="ai-chat">
+        {% if context %}
+        <div class="ai-context">
+            <strong>Context used by the assistant:</strong>
+            <ul>
+                {% if context.name %}<li>Name: {{ context.name }}</li>{% endif %}
+                {% if context.current_ride %}<li>Current ride: {{ context.current_ride }}</li>{% endif %}
+                {% if context.fare %}<li>Fare: {{ context.fare }}</li>{% endif %}
+                {% if context.ride_status %}<li>Ride status: {{ context.ride_status }}</li>{% endif %}
+                {% if context.payment_status %}<li>Payment status: {{ context.payment_status }}</li>{% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if reply %}
+        <div class="chat-bubble user">
+            <strong>You:</strong> {{ user_message }}
+        </div>
+        <div class="chat-bubble assistant">
+            <strong>Assistant:</strong><br>
+            {{ reply | replace('\n', '<br>') | safe }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('ai_assistant') }}" class="ai-form">
+            <div class="form-group">
+                <label for="message">Your question</label>
+                <textarea id="message" name="message" rows="3" required
+                          placeholder="e.g. How do I request a ride? How much is the fare from Akwa to Deido?"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Send</button>
+        </form>
+    </div>
+
+    <aside class="ai-help">
+        <h3>Example questions</h3>
+        <ul>
+            <li>How much is my estimated fare?</li>
+            <li>How do I request a ride?</li>
+            <li>How do I join a shared ride?</li>
+            <li>What is the status of my ride?</li>
+            <li>How do I make a MoMo payment?</li>
+            <li>My payment failed, what should I do?</li>
+            <li>How can I rate a ride?</li>
+        </ul>
+        <p class="note">
+            The AI is only an assistant. It cannot change ride or payment status.
+        </p>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Historique des Paiements - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">💳 Mobile Money Transparence</div>
+    <h1>Historique des Paiements</h1>
+    <p>Consultez et vérifiez vos transactions MTN Mobile Money et Orange Money.</p>
+</div>
+
+{% if payments %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Référence</th>
+                <th>Course</th>
+                <th>Itinéraire</th>
+                <th>Opérateur</th>
+                <th>Montant</th>
+                <th>Téléphone</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td><code>{{ p.transaction_reference or ('TXN-' ~ p.id) }}</code></td>
+                <td>#{{ p.ride_id }}</td>
+                <td><strong>{{ p.pickup }} → {{ p.destination }}</strong></td>
+                <td>
+                    {% if p.operator == 'ORANGE' %}
+                        <span class="badge badge-orange">🟠 Orange Money</span>
+                    {% else %}
+                        <span class="badge badge-mtn">🟡 MTN MoMo</span>
+                    {% endif %}
+                </td>
+                <td><strong>{{ "%.0f"|format(p.amount) }} XAF</strong></td>
+                <td>{{ p.phone }}</td>
+                <td><span class="badge badge-{{ p.status|lower }}">{{ p.status }}</span></td>
+                <td>{{ p.created_at.strftime('%d/%m/%Y %H:%M') if p.created_at else '-' }}</td>
+                <td>
+                    {% if p.status == 'PENDING' %}
+                        <form method="POST" action="{{ url_for('verify_payment', payment_id=p.id) }}" style="display:inline;">
+                            <button type="submit" class="btn-primary btn-sm" title="Vérifier la confirmation de la passerelle">
+                                🔄 Vérifier
+                            </button>
+                        </form>
+                    {% else %}
+                        <span style="color:#10b981;font-weight:600;">Validé</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Aucun paiement enregistré pour l'instant.</p>
+{% endif %}
+{% endblock %}

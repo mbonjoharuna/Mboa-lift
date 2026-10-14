@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Payments - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">⚙️ Finance &amp; Passerelle</div>
+    <h1>Suivi des Paiements</h1>
+    <p>Supervision des transactions MTN Mobile Money et Orange Money.</p>
+</div>
+
+<form method="GET" action="{{ url_for('admin_payments') }}" class="search-form">
+    <input type="text" name="q" value="{{ search }}" placeholder="Recherche par transaction, nom ou téléphone...">
+    <button type="submit" class="btn-primary btn-sm">Rechercher</button>
+</form>
+
+{% if payments %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Transaction</th>
+                <th>Utilisateur</th>
+                <th>Course</th>
+                <th>Itinéraire</th>
+                <th>Opérateur</th>
+                <th>Montant</th>
+                <th>Téléphone</th>
+                <th>Statut</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td><code>{{ p.transaction_reference or ('TXN-' ~ p.id) }}</code></td>
+                <td>{{ p.full_name }}</td>
+                <td>#{{ p.ride_id }}</td>
+                <td><strong>{{ p.pickup }} → {{ p.destination }}</strong></td>
+                <td>
+                    {% if p.operator == 'ORANGE' %}
+                        <span class="badge badge-orange">🟠 Orange</span>
+                    {% else %}
+                        <span class="badge badge-mtn">🟡 MTN MoMo</span>
+                    {% endif %}
+                </td>
+                <td><strong>{{ "%.0f"|format(p.amount) }} XAF</strong></td>
+                <td>{{ p.phone }}</td>
+                <td><span class="badge badge-{{ p.status|lower }}">{{ p.status }}</span></td>
+                <td>{{ p.created_at.strftime('%d/%m/%Y %H:%M') if p.created_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Aucun paiement trouvé.</p>
+{% endif %}
+{% endblock %}

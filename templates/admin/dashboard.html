@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Overview of MboaLift activity</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.users }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.rides }}</div>
+        <div class="stat-label">Total Rides</div>
+    </div>
+    <div class="stat-card pending">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending Rides</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.accepted }}</div>
+        <div class="stat-label">Accepted</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card cancelled">
+        <div class="stat-value">{{ stats.cancelled }}</div>
+        <div class="stat-label">Cancelled</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-value">{{ stats.pay_success }}</div>
+        <div class="stat-label">Successful Payments</div>
+    </div>
+    <div class="stat-card pending">
+        <div class="stat-value">{{ stats.pay_pending }}</div>
+        <div class="stat-label">Pending Payments</div>
+    </div>
+    <div class="stat-card cancelled">
+        <div class="stat-value">{{ stats.pay_failed }}</div>
+        <div class="stat-label">Failed Payments</div>
+    </div>
+    <div class="stat-card money">
+        <div class="stat-value">{{ "%.0f"|format(stats.total_money) }}</div>
+        <div class="stat-label">Total Collected (XAF)</div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('admin_rides') }}" class="btn-primary">Manage Rides</a>
+    <a href="{{ url_for('admin_users') }}" class="btn-outline">Manage Users</a>
+    <a href="{{ url_for('admin_payments') }}" class="btn-outline">View Payments</a>
+</div>
+{% endblock %}

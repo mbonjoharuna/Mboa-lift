@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Passenger Dashboard - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Hello, {{ user_name }} 👋</h1>
+    <p>Passenger dashboard — request rides and pay with MoMo</p>
+</div>
+
+{% if active_ride %}
+<div class="active-ride-card">
+    <div class="active-ride-header">
+        <div class="pulse-indicator pulse-{{ active_ride.status|lower }}"></div>
+        <div class="active-ride-title">
+            {% if active_ride.status == 'ACCEPTED' %}
+                <strong>Chauffeur en route</strong> · Course #{{ active_ride.id }}
+            {% else %}
+                <strong>Course en cours</strong> · Course #{{ active_ride.id }}
+            {% endif %}
+        </div>
+        <span class="badge badge-{{ active_ride.status|lower }}">{{ active_ride.status }}</span>
+    </div>
+    <div class="active-ride-body">
+        <div class="active-ride-route">
+            <span class="route-point start">📍 <strong>{{ active_ride.pickup }}</strong></span>
+            <span class="route-arrow">➔</span>
+            <span class="route-point end">🎯 <strong>{{ active_ride.destination }}</strong></span>
+        </div>
+        <div class="active-ride-details">
+            <div class="detail-item">
+                <span class="detail-label">Véhicule :</span>
+                <span class="detail-val">
+                    {% if active_ride.vehicle_type == 'bendskin' %}🏍️ Bendskin (Moto)
+                    {% elif active_ride.vehicle_type == 'comfort' %}🚗 Voiture Confort
+                    {% else %}🚕 Taxi Jaune
+                    {% endif %}
+                    {% if active_ride.vehicle_info %}({{ active_ride.vehicle_info }}){% endif %}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Chauffeur :</span>
+                <span class="detail-val"><strong>{{ active_ride.driver_name or 'Chauffeur assigné' }}</strong></span>
+            </div>
+            {% if active_ride.driver_phone %}
+            <div class="detail-item">
+                <span class="detail-label">Contact :</span>
+                <a href="tel:{{ active_ride.driver_phone }}" class="phone-link">📞 {{ active_ride.driver_phone }}</a>
+            </div>
+            {% endif %}
+            <div class="detail-item">
+                <span class="detail-label">Tarif :</span>
+                <span class="detail-val fare-badge">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
+            </div>
+        </div>
+    </div>
+    <div class="active-ride-actions">
+        <a href="https://wa.me/?text=Je%20suis%20en%20trajet%20MboaLift%20(Course%20%23{{ active_ride.id }})%20de%20{{ active_ride.pickup }}%20%C3%A0%20{{ active_ride.destination }}%20avec%20le%20chauffeur%20{{ active_ride.driver_name or 'assign%C3%A9' }}%20(Tel:%20{{ active_ride.driver_phone or '-' }}).%20Suivi%20de%20s%C3%A9curit%C3%A9%20Douala."
+           target="_blank" class="btn-safety btn-sm" title="Partager ce trajet pour votre sécurité">
+            🛡️ Partager ma sécurité WhatsApp
+        </a>
+        {% if not active_ride.is_paid %}
+            <a href="{{ url_for('payment', ride_id=active_ride.id) }}" class="btn-primary btn-sm">
+                💳 Payer par MoMo / OM
+            </a>
+        {% else %}
+            <span class="badge badge-success">Paiement validé ✅</span>
+        {% endif %}
+        <a href="{{ url_for('my_rides') }}" class="btn-outline btn-sm">Détails</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total Rides</div>
+    </div>
+    <div class="stat-card pending">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card cancelled">
+        <div class="stat-value">{{ stats.cancelled }}</div>
+        <div class="stat-label">Cancelled</div>
+    </div>
+    <div class="stat-card money">
+        <div class="stat-value">{{ "%.0f"|format(stats.total_paid) }}</div>
+        <div class="stat-label">Total Paid (XAF)</div>
+    </div>
+</div>
+
+{% if unpaid %}
+<section class="section">
+    <div class="section-header">
+        <h2>Paiement Mobile Money (MoMo / Orange Money)</h2>
+    </div>
+    <p style="margin-bottom:12px;color:#6c757d;">
+        Ces courses sont acceptées ou terminées et prêtes à être réglées. Vous validerez la transaction par prompt USSD sur votre téléphone avec votre code secret personnel.
+    </p>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Itinéraire</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in unpaid %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                    <td><strong>{{ "%.0f"|format(r.fare) }} XAF</strong></td>
+                    <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('payment', ride_id=r.id) }}" class="btn-primary btn-sm">
+                            Payer par MoMo / OM
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<section class="section">
+    <div class="section-header">
+        <h2>Recent Rides</h2>
+        <a href="{{ url_for('my_rides') }}" class="btn-outline btn-sm">View All</a>
+    </div>
+
+    {% if recent %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Route</th>
+                    <th>Fare</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td>{{ r.pickup }} → {{ r.destination }}</td>
+                    <td>{{ "%.0f"|format(r.fare) }} XAF</td>
+                    <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                    <td>{{ r.created_at.strftime('%d/%m/%Y %H:%M') if r.created_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No rides yet. <a href="{{ url_for('request_ride') }}">Request your first ride</a>.</p>
+    {% endif %}
+</section>
+
+<div class="quick-actions">
+    <a href="{{ url_for('request_ride') }}" class="btn-primary">Request Ride</a>
+    <a href="{{ url_for('shared_rides') }}" class="btn-outline">Shared Rides</a>
+    <a href="{{ url_for('payments') }}" class="btn-outline">Payment History</a>
+    <a href="{{ url_for('ai_assistant') }}" class="btn-outline">Ask AI Assistant</a>
+</div>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Request Ride - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">🇨🇲 Reinventing Douala's Ride</div>
+    <h1>Request a Ride</h1>
+    <p>Choose your Douala destination and vehicle mode. Fast, transparent fares with MoMo & Orange Money.</p>
+</div>
+
+<div class="form-card" style="max-width:620px;">
+    <!-- Douala Traffic & Rush Hour Advisory Tip -->
+    <div class="traffic-tip">
+        <span class="traffic-tip-icon">🚦</span>
+        <div class="traffic-tip-text">
+            <strong>Conseil Trafic Douala :</strong> 
+            Aux heures de pointe sur le <strong>Pont du Wouri</strong>, <strong>Ndokoti</strong> ou <strong>Rond-Point Deido</strong>, 
+            choisissez un <strong>Bendskin 🏍️</strong> pour éviter les embouteillages !
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('request_ride') }}" id="rideForm" novalidate>
+        <!-- Vehicle Type Picker (Bendskin Moto vs Taxi Jaune vs Confort) -->
+        <div class="form-group">
+            <label class="form-label-bold">Type de transport</label>
+            <div class="vehicle-picker" id="vehiclePicker">
+                <label class="vehicle-card {% if selected_vehicle_type == 'bendskin' %}active{% endif %}">
+                    <input type="radio" name="vehicle_type" value="bendskin" {% if selected_vehicle_type == 'bendskin' %}checked{% endif %}>
+                    <div class="vehicle-icon">🏍️</div>
+                    <div class="vehicle-meta">
+                        <strong>Bendskin (Moto)</strong>
+                        <small>Anti-bouchons • 1 passager max</small>
+                    </div>
+                    <span class="vehicle-badge eco">Éco (-30%)</span>
+                </label>
+
+                <label class="vehicle-card {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}active{% endif %}">
+                    <input type="radio" name="vehicle_type" value="taxi" {% if not selected_vehicle_type or selected_vehicle_type == 'taxi' %}checked{% endif %}>
+                    <div class="vehicle-icon">🚕</div>
+                    <div class="vehicle-meta">
+                        <strong>Taxi Jaune</strong>
+                        <small>Classique Douala • 1 à 4 passagers</small>
+                    </div>
+                    <span class="vehicle-badge standard">Populaire</span>
+                </label>
+
+                <label class="vehicle-card {% if selected_vehicle_type == 'comfort' %}active{% endif %}">
+                    <input type="radio" name="vehicle_type" value="comfort" {% if selected_vehicle_type == 'comfort' %}checked{% endif %}>
+                    <div class="vehicle-icon">🚗</div>
+                    <div class="vehicle-meta">
+                        <strong>Voiture Confort</strong>
+                        <small>Climatisé • Privé / Aéroport</small>
+                    </div>
+                    <span class="vehicle-badge vip">VIP</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="pickup">Pickup location (Départ)</label>
+            <input list="locationsList" id="pickup" name="pickup" required
+                   value="{{ selected_pickup or '' }}"
+                   placeholder="Type or choose (e.g. Akwa, Bonanjo, Bonabéri)">
+            <datalist id="locationsList">
+                {% for loc in locations %}
+                <option value="{{ loc }}">
+                {% endfor %}
+            </datalist>
+            <small>Choisissez parmi les quartiers majeurs de Douala.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="destination">Destination (Arrivée)</label>
+            <input list="locationsList2" id="destination" name="destination" required
+                   value="{{ selected_destination or '' }}"
+                   placeholder="Type or choose (e.g. Bonamoussadi, Aéroport, Ndokoti)">
+            <datalist id="locationsList2">
+                {% for loc in locations %}
+                <option value="{{ loc }}">
+                {% endfor %}
+            </datalist>
+        </div>
+
+        <div class="form-group" id="passengersGroup">
+            <label for="passengers">Number of passengers</label>
+            <input type="number" id="passengers" name="passengers"
+                   value="1" min="1" max="4" required>
+            <small id="paxNotice">Standard Taxi accepts up to 4 passengers. Bendskin accepts 1.</small>
+        </div>
+
+        <!-- Dynamic Real-time Fare Box -->
+        <div class="fare-box" id="fareBox" style="display:none;">
+            <div class="fare-row">
+                <span>Trajet :</span>
+                <strong><span id="farePickup">-</span> → <span id="fareDestination">-</span></strong>
+            </div>
+            <div class="fare-row">
+                <span>Mode :</span>
+                <strong id="fareMode">Taxi Jaune</strong>
+            </div>
+            <div class="fare-row fare-total">
+                <span>Tarif estimé :</span>
+                <strong id="fareAmount">-</strong>
+            </div>
+            <p class="fare-note">Tarif transparent garanti avant le départ. Paiement par MTN MoMo ou Orange Money.</p>
+        </div>
+
+        <div class="form-group" id="driversSection">
+            <label>Chauffeurs disponibles à proximité</label>
+            <div id="driversList" class="drivers-list">
+                {% if nearby_drivers %}
+                    {% for d in nearby_drivers %}
+                    <label class="driver-option">
+                        <input type="radio" name="preferred_driver" value="{{ d.id }}">
+                        <span>
+                            <strong>{{ d.full_name }}</strong>
+                            — {{ d.current_location }}
+                            {% if d.vehicle_info %} ({{ d.vehicle_info }}){% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                    <label class="driver-option">
+                        <input type="radio" name="preferred_driver" value="" checked>
+                        <span>N'importe quel chauffeur disponible (premier à accepter)</span>
+                    </label>
+                {% else %}
+                    <p class="empty-hint" id="noDriversHint">
+                        Indiquez votre lieu de départ pour voir les chauffeurs libres à proximité.
+                    </p>
+                {% endif %}
+            </div>
+            <small>Zone de disponibilité basée sur la présence active déclarée du chauffeur.</small>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block btn-lg" id="submitRide">
+            Commander la course
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initVehiclePicker();
+    initFareCalculator();
+    initNearbyDrivers();
+});
+
+function initVehiclePicker() {
+    var cards = document.querySelectorAll('.vehicle-card');
+    var paxInput = document.getElementById('passengers');
+    var paxNotice = document.getElementById('paxNotice');
+
+    cards.forEach(function(card) {
+        card.addEventListener('click', function() {
+            cards.forEach(function(c) { c.classList.remove('active'); });
+            card.classList.add('active');
+            var radio = card.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+                if (radio.value === 'bendskin') {
+                    if (paxInput) {
+                        paxInput.value = 1;
+                        paxInput.max = 1;
+                    }
+                    if (paxNotice) {
+                        paxNotice.textContent = (window.MboaLiftI18n && window.MboaLiftI18n.t)
+                            ? window.MboaLiftI18n.t("Bendskin moto-taxi : 1 seul passager pour votre sécurité.")
+                            : "Bendskin moto-taxi : 1 seul passager pour votre sécurité.";
+                    }
+                } else {
+                    if (paxInput) {
+                        paxInput.max = 4;
+                    }
+                    if (paxNotice) {
+                        paxNotice.textContent = (window.MboaLiftI18n && window.MboaLiftI18n.t)
+                            ? window.MboaLiftI18n.t("Capacité : jusqu'à 4 passagers.")
+                            : "Capacité : jusqu'à 4 passagers.";
+                    }
+                }
+                // Trigger fare refresh
+                var dest = document.getElementById('destination');
+                if (dest) dest.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+}
+
+function initNearbyDrivers() {
+    var pickup = document.getElementById('pickup');
+    var list = document.getElementById('driversList');
+    if (!pickup || !list) return;
+
+    function _translate(k) {
+        return (window.MboaLiftI18n && window.MboaLiftI18n.t) ? window.MboaLiftI18n.t(k) : k;
+    }
+
+    function loadDrivers() {
+        var p = pickup.value.trim();
+        if (!p) return;
+        fetch('/api/nearby-drivers?pickup=' + encodeURIComponent(p))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                list.innerHTML = '';
+                var targetLoc = data.pickup || p;
+                if (!data.drivers || data.drivers.length === 0) {
+                    var emptyText = _translate("Aucun chauffeur disponible près de " + targetLoc + " pour le moment.");
+                    var allDriversText = _translate("Tous les chauffeurs disponibles");
+                    list.innerHTML = '<p class="empty-hint">' + emptyText + ' ' + _translate("Vous pouvez quand même demander votre course !") + '</p>' +
+                        '<label class="driver-option"><input type="radio" name="preferred_driver" value="" checked> ' +
+                        '<span>' + allDriversText + '</span></label>';
+                    return;
+                }
+                data.drivers.forEach(function(d) {
+                    var label = document.createElement('label');
+                    label.className = 'driver-option';
+                    var vehicle = d.vehicle_info ? ' (' + d.vehicle_info + ')' : '';
+                    label.innerHTML =
+                        '<input type="radio" name="preferred_driver" value="' + d.id + '">' +
+                        '<span><strong>' + d.full_name + '</strong> — ' + d.current_location + vehicle + '</span>';
+                    list.appendChild(label);
+                });
+                var any = document.createElement('label');
+                any.className = 'driver-option';
+                any.innerHTML = '<input type="radio" name="preferred_driver" value="" checked>' +
+                    '<span>' + _translate("N'importe quel chauffeur disponible (premier à accepter)") + '</span>';
+                list.appendChild(any);
+            })
+            .catch(function() {});
+    }
+
+    pickup.addEventListener('change', loadDrivers);
+    pickup.addEventListener('blur', loadDrivers);
+}
+</script>
+{% endblock %}

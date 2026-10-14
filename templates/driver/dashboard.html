@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">🇨🇲 Espace Chauffeur Douala</div>
+    <h1>Bonjour, {{ driver_name }} 🚗</h1>
+    <p>Consultez les demandes de courses disponibles à Douala et suivez vos gains Mobile Money.</p>
+</div>
+
+{% if active_mission %}
+<div class="active-mission-card">
+    <div class="active-mission-header">
+        <div class="pulse-indicator pulse-{{ active_mission.status|lower }}"></div>
+        <div class="active-mission-title">
+            <strong>Mission en cours</strong> · Course #{{ active_mission.id }}
+            <small style="display:block;color:#6b7280;margin-top:2px;">
+                Passager : <strong>{{ active_mission.rider_name }}</strong> ({{ active_mission.passengers }} passager(s))
+            </small>
+        </div>
+        <span class="badge badge-{{ active_mission.status|lower }}">{{ active_mission.status }}</span>
+    </div>
+    <div class="active-mission-route">
+        <span class="route-point start">📍 <strong>{{ active_mission.pickup }}</strong></span>
+        <span class="route-arrow">➔</span>
+        <span class="route-point end">🎯 <strong>{{ active_mission.destination }}</strong></span>
+        <span class="mission-fare">{{ "%.0f"|format(active_mission.fare) }} XAF</span>
+    </div>
+    <div class="active-mission-actions">
+        {% if active_mission.rider_phone %}
+            <a href="tel:{{ active_mission.rider_phone }}" class="btn-outline btn-sm">📞 Appeler passager ({{ active_mission.rider_phone }})</a>
+        {% endif %}
+        {% if active_mission.status == 'ACCEPTED' %}
+            <form method="POST" action="{{ url_for('driver_start_ride', ride_id=active_mission.id) }}" style="display:inline">
+                <button type="submit" class="btn-primary btn-sm">Démarrer le trajet ▶</button>
+            </form>
+            <form method="POST" action="{{ url_for('driver_cancel_ride', ride_id=active_mission.id) }}" style="display:inline"
+                  onsubmit="return confirm('Annuler cette course ? Elle sera redistribuée aux autres chauffeurs.');">
+                <button type="submit" class="btn-danger btn-sm">Annuler</button>
+            </form>
+        {% elif active_mission.status == 'IN_PROGRESS' %}
+            <form method="POST" action="{{ url_for('driver_complete_ride', ride_id=active_mission.id) }}" style="display:inline">
+                <button type="submit" class="btn-success btn-sm">Terminer la course ✅</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card pending">
+        <div class="stat-value">{{ stats.available }}</div>
+        <div class="stat-label">Courses disponibles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.my_active }}</div>
+        <div class="stat-label">Courses actives</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">Courses terminées</div>
+    </div>
+    <div class="stat-card money">
+        <div class="stat-value">{{ "%.0f"|format(stats.total_earned) }}</div>
+        <div class="stat-label">Total Gains (XAF)</div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('driver_available_rides') }}" class="btn-primary">Voir les courses disponibles</a>
+    <a href="{{ url_for('driver_my_rides') }}" class="btn-outline">Mes courses</a>
+    <a href="{{ url_for('driver_status') }}" class="btn-outline">Modifier ma position / statut</a>
+</div>
+{% endblock %}

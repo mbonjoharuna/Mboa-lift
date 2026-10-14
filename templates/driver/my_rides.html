@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Mes Courses Chauffeur - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">🚗 Espace Chauffeur</div>
+    <h1>Mes Courses Prises en Charge</h1>
+    <p>Gérez vos trajets acceptés, démarrez la course et validez la fin du trajet pour percevoir vos gains.</p>
+</div>
+
+{% if rides %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Mode</th>
+                <th>Passager</th>
+                <th>Itinéraire</th>
+                <th>Tarif</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rides %}
+            <tr>
+                <td>#{{ r.id }}</td>
+                <td>
+                    {% if r.vehicle_type == 'bendskin' %}
+                        <span class="badge badge-bendskin">🏍️ Bendskin</span>
+                    {% elif r.vehicle_type == 'comfort' %}
+                        <span class="badge badge-comfort">🚗 Confort</span>
+                    {% else %}
+                        <span class="badge badge-taxi">🚕 Taxi Jaune</span>
+                    {% endif %}
+                </td>
+                <td>{{ r.rider_name }}<br><small>📞 {{ r.rider_phone }}</small></td>
+                <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                <td><strong>{{ "%.0f"|format(r.fare) }} XAF</strong></td>
+                <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                <td class="actions">
+                    {% if r.status == 'ACCEPTED' %}
+                    <form method="POST" action="{{ url_for('driver_start_ride', ride_id=r.id) }}" style="display:inline">
+                        <button type="submit" class="btn-primary btn-sm">Démarrer trajet</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('driver_cancel_ride', ride_id=r.id) }}"
+                          style="display:inline"
+                          onsubmit="return confirm('Annuler et libérer cette course pour un autre chauffeur ?');">
+                        <button type="submit" class="btn-danger btn-sm">Annuler</button>
+                    </form>
+                    {% elif r.status == 'IN_PROGRESS' %}
+                    <form method="POST" action="{{ url_for('driver_complete_ride', ride_id=r.id) }}" style="display:inline">
+                        <button type="submit" class="btn-success btn-sm">Terminer course ✅</button>
+                    </form>
+                    {% elif r.status == 'COMPLETED' %}
+                        <span style="color:#10b981;font-weight:600;">Terminée</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Vous n'avez pas encore de courses assignées.
+    <a href="{{ url_for('driver_available_rides') }}">Consulter les courses disponibles</a>
+</p>
+{% endif %}
+{% endblock %}

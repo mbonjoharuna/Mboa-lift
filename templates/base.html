@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111827">
+    <meta name="description" content="MboaLift — smart, affordable rides across Douala.">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+    <title>{% block title %}MboaLift{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-language-switcher="true" data-server-lang="{{ current_lang or 'en' }}">
+    <header class="header">
+        <div class="container header-inner">
+            <a href="{{ url_for('index') }}" class="brand" aria-label="MboaLift home">
+                <img src="{{ url_for('static', filename='icons/mboalift-mark.svg') }}" alt="" class="brand-mark">
+                <span class="brand-copy"><strong>MboaLift</strong><small>Douala Mobility</small></span>
+            </a>
+            <nav class="nav">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('request_ride') }}" class="{% if request.endpoint == 'request_ride' %}active{% endif %}">Request Ride</a>
+                    <a href="{{ url_for('shared_rides') }}" class="{% if request.endpoint == 'shared_rides' %}active{% endif %}">Shared Rides</a>
+                    <a href="{{ url_for('my_rides') }}" class="{% if request.endpoint in ['my_rides', 'rate_ride'] %}active{% endif %}">My Rides</a>
+                    <a href="{{ url_for('payments') }}" class="{% if request.endpoint in ['payments', 'payment'] %}active{% endif %}">Payments</a>
+                    <a href="{{ url_for('ai_assistant') }}" class="{% if request.endpoint == 'ai_assistant' %}active{% endif %}">AI Assistant</a>
+                    <a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">Profile</a>
+                    <a href="{{ url_for('logout') }}" class="btn-outline">Logout</a>
+                {% elif session.get('driver_id') %}
+                    <a href="{{ url_for('driver_dashboard') }}" class="{% if request.endpoint == 'driver_dashboard' %}active{% endif %}">Driver Dashboard</a>
+                    <a href="{{ url_for('driver_available_rides') }}" class="{% if request.endpoint == 'driver_available_rides' %}active{% endif %}">Available Rides</a>
+                    <a href="{{ url_for('driver_my_rides') }}" class="{% if request.endpoint == 'driver_my_rides' %}active{% endif %}">My Rides</a>
+                    <a href="{{ url_for('driver_status') }}" class="{% if request.endpoint == 'driver_status' %}active{% endif %}">My Status</a>
+                    <a href="{{ url_for('driver_logout') }}" class="btn-outline">Logout</a>
+                {% elif session.get('admin_id') %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Admin Dashboard</a>
+                    <a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}">Users</a>
+                    <a href="{{ url_for('admin_rides') }}" class="{% if request.endpoint == 'admin_rides' %}active{% endif %}">Rides</a>
+                    <a href="{{ url_for('admin_payments') }}" class="{% if request.endpoint == 'admin_payments' %}active{% endif %}">Payments</a>
+                    <a href="{{ url_for('admin_logout') }}" class="btn-outline">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                    <a href="{{ url_for('login') }}" class="{% if request.endpoint == 'login' %}active{% endif %}">Passenger Login</a>
+                    <a href="{{ url_for('register') }}" class="{% if request.endpoint == 'register' %}active{% endif %}">Passenger Register</a>
+                    <a href="{{ url_for('driver_login') }}" class="{% if request.endpoint == 'driver_login' %}active{% endif %}">Driver Login</a>
+                    <a href="{{ url_for('driver_register') }}" class="btn-primary {% if request.endpoint == 'driver_register' %}active{% endif %}">Driver Register</a>
+                    <a href="{{ url_for('admin_login') }}" class="{% if request.endpoint == 'admin_login' %}active{% endif %}">Admin</a>
+                {% endif %}
+            </nav>
+            <div class="language-switcher" aria-label="Language selection">
+                <label for="languageSwitcher" class="sr-only">Language</label>
+                <select id="languageSwitcher" title="Language" aria-label="Language selection">
+                    <option value="en" {% if (current_lang or 'en') == 'en' %}selected{% endif %}>🇬🇧 English</option>
+                    <option value="fr" {% if current_lang == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+                </select>
+            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+        </div>
+    </header>
+
+    <div id="appLoader" class="app-loader" aria-hidden="true"><div class="loader-card"><img src="{{ url_for('static', filename='icons/mboalift-mark.svg') }}" alt="MboaLift" class="loader-mark"><span>MboaLift</span><small>Preparing your ride…</small></div></div>
+
+    <main class="main">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>MboaLift &mdash; Re-invent Douala's Ride &copy; 2026</p>
+            <p class="footer-note">School coding challenge project</p>
+        </div>
+    </footer>
+
+    <!-- ========== Floating AI Chatbot (available on every page) ========== -->
+    <div id="chatbot" class="chatbot">
+        <!-- Toggle button -->
+        <button type="button" id="chatbotToggle" class="chatbot-toggle" aria-label="Open AI Assistant">
+            💬
+        </button>
+
+        <!-- Chat panel -->
+        <div id="chatbotPanel" class="chatbot-panel" hidden>
+            <div class="chatbot-header">
+                <span>AI Assistant</span>
+                <button type="button" id="chatbotClose" class="chatbot-close" aria-label="Close">×</button>
+            </div>
+            <div id="chatbotMessages" class="chatbot-messages">
+                <div class="chatbot-msg bot">
+                    Hello! I am your MboaLift assistant.<br>
+                    Ask me about fares, requesting rides, shared rides, MoMo payments, or ride status.
+                </div>
+            </div>
+            <form id="chatbotForm" class="chatbot-form">
+                <input type="text" id="chatbotInput" placeholder="Type your question..." autocomplete="off" required>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(() => {}));</script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

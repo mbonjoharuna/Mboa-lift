@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Paiement Mobile Money - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">💳 Mobile Money Cameroun</div>
+    <h1>Paiement de votre course</h1>
+    <p>Réglez votre trajet en toute sécurité avec <strong>MTN MoMo</strong> ou <strong>Orange Money</strong>.</p>
+</div>
+
+<div class="form-card" style="max-width:540px;">
+    <div class="summary-box">
+        <div class="summary-row">
+            <span>Course :</span>
+            <strong>#{{ ride.id }}</strong>
+        </div>
+        <div class="summary-row">
+            <span>Itinéraire :</span>
+            <strong>{{ ride.pickup }} → {{ ride.destination }}</strong>
+        </div>
+        <div class="summary-row">
+            <span>Type de véhicule :</span>
+            <strong>
+                {% if ride.vehicle_type == 'bendskin' %}🏍️ Bendskin (Moto)
+                {% elif ride.vehicle_type == 'comfort' %}🚗 Voiture Confort
+                {% else %}🚕 Taxi Jaune
+                {% endif %}
+            </strong>
+        </div>
+        <div class="summary-row">
+            <span>Montant à régler :</span>
+            <strong class="amount">{{ "%.0f"|format(ride.fare) }} XAF</strong>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('payment', ride_id=ride.id) }}" id="paymentForm" novalidate>
+        <!-- Operator selector -->
+        <div class="form-group">
+            <label class="form-label-bold">Opérateur Mobile Money</label>
+            <div class="operator-selector">
+                <label class="operator-card active" id="opMtnLabel">
+                    <input type="radio" name="operator" value="MTN" checked>
+                    <span class="operator-dot mtn-dot"></span>
+                    <strong>MTN MoMo</strong>
+                    <small>*126#</small>
+                </label>
+                <label class="operator-card" id="opOrangeLabel">
+                    <input type="radio" name="operator" value="ORANGE">
+                    <span class="operator-dot orange-dot"></span>
+                    <strong>Orange Money</strong>
+                    <small>*150#</small>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="momo_phone">Numéro de téléphone (Cameroun)</label>
+            <div class="phone-input-wrap">
+                <span class="phone-prefix">+237</span>
+                <input type="tel" id="momo_phone" name="momo_phone"
+                       value="{{ default_phone }}" required
+                       placeholder="6XX XXX XXX (ex: 671234567)" pattern="[0-9]{9,15}">
+                <span class="detected-badge" id="detectedOpBadge">MTN</span>
+            </div>
+            <small>Entrez votre numéro à 9 chiffres. Vous recevrez un prompt USSD pour valider avec votre code secret.</small>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block btn-lg" id="paySubmitBtn">
+            Payer {{ "%.0f"|format(ride.fare) }} XAF
+        </button>
+    </form>
+
+    <div class="secure-box">
+        <p class="secure-note">
+            🔒 <strong>Sécurité absolue :</strong> Nous ne vous demandons JAMAIS votre code PIN secret sur ce site. La confirmation se fait directement sur votre téléphone.
+        </p>
+        <p class="secure-note" style="margin-top:6px;font-size:0.8rem;color:#6b7280;">
+            Astuce démo : un numéro se terminant par <code>0</code> simule un échec/annulation, tout autre numéro déclenche la confirmation.
+        </p>
+    </div>
+</div>
+
+<!-- USSD Simulation Modal for Academic/Jury Demo -->
+<div id="ussdModal" class="ussd-modal-overlay" style="display:none;" aria-hidden="true">
+    <div class="ussd-phone-dialog" role="dialog" aria-labelledby="ussdOperatorTag">
+        <div class="ussd-header mtn-theme" id="ussdHeader">
+            <span id="ussdOperatorTag">MTN MoMo (*126#)</span>
+            <span class="ussd-close-btn" id="ussdCancelBtn" title="Fermer">&times;</span>
+        </div>
+        <div class="ussd-screen">
+            <div class="ussd-prompt-text" id="ussdPromptText">
+                Approuver le transfert de <strong>{{ "%.0f"|format(ride.fare) }} XAF</strong> vers <strong>MboaLift</strong> (Course #{{ ride.id }}) ?
+            </div>
+            <div class="ussd-pin-box">
+                <span class="ussd-pin-label">Code PIN secret :</span>
+                <span class="ussd-pin-dots">● ● ● ●</span>
+            </div>
+            <div class="ussd-status-msg" id="ussdStatusMsg">
+                <span>📲 Prompt USSD reçu sur votre téléphone...</span>
+            </div>
+            <div class="ussd-progress-bar">
+                <div class="ussd-progress-fill" id="ussdProgressFill"></div>
+            </div>
+        </div>
+        <div class="ussd-footer">
+            <button type="button" class="btn-ussd-cancel" id="ussdAbortBtn">Annuler</button>
+            <button type="button" class="btn-ussd-confirm" id="ussdProceedBtn">Valider le paiement</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var phoneInput = document.getElementById('momo_phone');
+    var badge = document.getElementById('detectedOpBadge');
+    var opMtn = document.getElementById('opMtnLabel');
+    var opOrange = document.getElementById('opOrangeLabel');
+    var radios = document.querySelectorAll('input[name="operator"]');
+    var form = document.getElementById('paymentForm');
+    var modal = document.getElementById('ussdModal');
+    var ussdHeader = document.getElementById('ussdHeader');
+    var ussdOperatorTag = document.getElementById('ussdOperatorTag');
+    var ussdAbortBtn = document.getElementById('ussdAbortBtn');
+    var ussdCancelBtn = document.getElementById('ussdCancelBtn');
+    var ussdProceedBtn = document.getElementById('ussdProceedBtn');
+    var ussdProgressFill = document.getElementById('ussdProgressFill');
+    var isSubmitting = false;
+    var timer = null;
+
+    function updateOperatorUI(op) {
+        if (op === 'ORANGE') {
+            opOrange.classList.add('active');
+            opMtn.classList.remove('active');
+            radios.forEach(function(r) { if (r.value === 'ORANGE') r.checked = true; });
+            badge.textContent = 'Orange';
+            badge.className = 'detected-badge orange';
+        } else {
+            opMtn.classList.add('active');
+            opOrange.classList.remove('active');
+            radios.forEach(function(r) { if (r.value === 'MTN') r.checked = true; });
+            badge.textContent = 'MTN';
+            badge.className = 'detected-badge mtn';
+        }
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function() {
+            var val = phoneInput.value.replace(/\D/g, '');
+            if (val.startsWith('237')) val = val.substring(3);
+            if (val.startsWith('69') || val.startsWith('655') || val.startsWith('656') || val.startsWith('657') || val.startsWith('658') || val.startsWith('659')) {
+                updateOperatorUI('ORANGE');
+            } else if (val.startsWith('67') || val.startsWith('68') || val.startsWith('650') || val.startsWith('651') || val.startsWith('652') || val.startsWith('653') || val.startsWith('654')) {
+                updateOperatorUI('MTN');
+            }
+        });
+        phoneInput.dispatchEvent(new Event('input'));
+    }
+
+    radios.forEach(function(r) {
+        r.addEventListener('change', function() {
+            updateOperatorUI(r.value);
+        });
+    });
+
+    function closeModal() {
+        if (timer) clearTimeout(timer);
+        if (modal) {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        if (ussdProgressFill) ussdProgressFill.style.width = '0%';
+    }
+
+    if (ussdAbortBtn) ussdAbortBtn.addEventListener('click', closeModal);
+    if (ussdCancelBtn) ussdCancelBtn.addEventListener('click', closeModal);
+
+    if (ussdProceedBtn) {
+        ussdProceedBtn.addEventListener('click', function() {
+            if (timer) clearTimeout(timer);
+            isSubmitting = true;
+            if (form) form.submit();
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (isSubmitting) return; // let normal submission proceed
+            e.preventDefault();
+
+            // Check phone input
+            var val = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
+            if (val.length < 9) {
+                alert('Veuillez entrer un numéro de téléphone valide à 9 chiffres.');
+                if (phoneInput) phoneInput.focus();
+                return;
+            }
+
+            var selectedOp = 'MTN';
+            radios.forEach(function(r) { if (r.checked) selectedOp = r.value; });
+
+            if (selectedOp === 'ORANGE') {
+                if (ussdHeader) ussdHeader.className = 'ussd-header orange-theme';
+                if (ussdOperatorTag) ussdOperatorTag.textContent = 'Orange Money (*150#)';
+            } else {
+                if (ussdHeader) ussdHeader.className = 'ussd-header mtn-theme';
+                if (ussdOperatorTag) ussdOperatorTag.textContent = 'MTN MoMo (*126#)';
+            }
+
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+            }
+
+            if (ussdProgressFill) {
+                ussdProgressFill.style.width = '0%';
+                setTimeout(function() {
+                    ussdProgressFill.style.width = '100%';
+                }, 40);
+            }
+
+            // Auto-submit after 2.5 seconds
+            timer = setTimeout(function() {
+                isSubmitting = true;
+                form.submit();
+            }, 2500);
+        });
+    }
+});
+</script>
+{% endblock %}

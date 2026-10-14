@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Courses Disponibles - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">🚗 Demandes en direct</div>
+    <h1>Courses Disponibles</h1>
+    <p>Acceptez une course en attente à Douala. Dès que vous acceptez, la course vous est exclusivement assignée.</p>
+</div>
+
+{% if rides %}
+<div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Véhicule</th>
+                <th>Passager</th>
+                <th>Itinéraire</th>
+                <th>Passagers</th>
+                <th>Tarif</th>
+                <th>Demandée à</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rides %}
+            <tr>
+                <td>#{{ r.id }}</td>
+                <td>
+                    {% if r.vehicle_type == 'bendskin' %}
+                        <span class="badge badge-bendskin">🏍️ Bendskin</span>
+                    {% elif r.vehicle_type == 'comfort' %}
+                        <span class="badge badge-comfort">🚗 Confort</span>
+                    {% else %}
+                        <span class="badge badge-taxi">🚕 Taxi Jaune</span>
+                    {% endif %}
+                </td>
+                <td>{{ r.rider_name }}<br><small>📞 {{ r.rider_phone }}</small></td>
+                <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                <td>{{ r.passengers }}</td>
+                <td><strong>{{ "%.0f"|format(r.fare) }} XAF</strong></td>
+                <td>{{ r.created_at.strftime('%d/%m %H:%M') if r.created_at else '-' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('driver_accept_ride', ride_id=r.id) }}"
+                          onsubmit="return confirm('Accepter cette course ?');">
+                        <button type="submit" class="btn-primary btn-sm">Accepter la course</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">Aucune course en attente pour le moment. Vérifiez que votre statut est bien défini sur "free" dans votre profil.</p>
+{% endif %}
+{% endblock %}

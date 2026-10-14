@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Driver Register - MboaLift{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <div class="badge-pill">🚗 Rejoindre le réseau MboaLift</div>
+    <h1>Inscription Chauffeur</h1>
+    <p class="auth-subtitle">Conduisez à Douala (Taxi Jaune, Moto Bendskin ou Voiture Confort)</p>
+
+    <form method="POST" action="{{ url_for('driver_register') }}" novalidate>
+        <div class="form-group">
+            <label for="full_name">Nom complet</label>
+            <input type="text" id="full_name" name="full_name" required
+                   placeholder="ex: Jean-Paul Mbarga" minlength="3">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Numéro de téléphone</label>
+            <input type="tel" id="phone" name="phone" required
+                   placeholder="ex: 671234567" pattern="[0-9]{9,15}">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Adresse email</label>
+            <input type="email" id="email" name="email" required
+                   placeholder="ex: chauffeur@mboalift.cm">
+        </div>
+
+        <div class="form-group">
+            <label for="vehicle_type">Catégorie de véhicule</label>
+            <select id="vehicle_type" name="vehicle_type" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #d1d5db;font:inherit;">
+                <option value="taxi">🚕 Taxi Jaune (Voiture partagée standard)</option>
+                <option value="bendskin">🏍️ Bendskin Moto-Taxi</option>
+                <option value="comfort">🚗 Voiture Confort (Climatisée / Privée)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="vehicle_info">Détails du véhicule & immatriculation</label>
+            <input type="text" id="vehicle_info" name="vehicle_info"
+                   placeholder="ex: Toyota Corolla LT-123-AB ou Bajaj Boxer 150">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required
+                   placeholder="Au moins 6 caractères" minlength="6">
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password">Confirmer le mot de passe</label>
+            <input type="password" id="confirm_password" name="confirm_password" required
+                   placeholder="Répétez le mot de passe" minlength="6">
+        </div>
+
+        <button type="submit" class="btn-primary btn-block btn-lg">S'inscrire comme Chauffeur</button>
+    </form>
+
+    <p class="auth-footer">
+        Déjà chauffeur ? <a href="{{ url_for('driver_login') }}">Connexion Chauffeur</a><br>
+        Vous êtes passager ? <a href="{{ url_for('register') }}">Inscription Passager</a>
+    </p>
+</div>
+{% endblock %}

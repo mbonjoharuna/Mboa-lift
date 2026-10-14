@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Mes Trajets - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="badge-pill">🚖 Mobilité Urbaine Douala</div>
+    <h1>Mes Trajets</h1>
+    <p>Suivez vos courses en temps réel, payez par Mobile Money et partagez vos trajets pour votre sécurité.</p>
+</div>
+
+<section class="section">
+    <div class="section-header">
+        <h2>Courses que j'ai demandées</h2>
+        <a href="{{ url_for('request_ride') }}" class="btn-primary btn-sm">+ Nouvelle course</a>
+    </div>
+
+    {% if own_rides %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Mode</th>
+                    <th>Itinéraire</th>
+                    <th>Chauffeur</th>
+                    <th>Tarif</th>
+                    <th>Statut</th>
+                    <th>Paiement</th>
+                    <th>Actions & Sécurité</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in own_rides %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td>
+                        {% if r.vehicle_type == 'bendskin' %}
+                            <span class="badge badge-bendskin">🏍️ Bendskin</span>
+                        {% elif r.vehicle_type == 'comfort' %}
+                            <span class="badge badge-comfort">🚗 Confort</span>
+                        {% else %}
+                            <span class="badge badge-taxi">🚕 Taxi Jaune</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ r.pickup }} → {{ r.destination }}</strong><br>
+                        <small>{{ r.passengers }} passager(s)</small>
+                    </td>
+                    <td>
+                        {% if r.driver_name %}
+                            <strong>{{ r.driver_name }}</strong><br>
+                            <small>📞 {{ r.driver_phone or '-' }} {% if r.vehicle_info %}({{ r.vehicle_info }}){% endif %}</small>
+                        {% else %}
+                            <span style="color:#6b7280;font-style:italic;">En recherche...</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ "%.0f"|format(r.fare) }} XAF</strong></td>
+                    <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                    <td>
+                        {% if r.payment_status == 'SUCCESSFUL' %}
+                            <span class="badge badge-success">Payé ✅</span>
+                        {% elif r.payment_status == 'PENDING' %}
+                            <span class="badge badge-warning">En attente ⏳</span>
+                        {% else %}
+                            <span class="badge badge-secondary">Non payé</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <!-- Pending: Allow Rider to Cancel -->
+                        {% if r.status == 'PENDING' %}
+                            <form method="POST" action="{{ url_for('rider_cancel_ride', ride_id=r.id) }}" style="display:inline;"
+                                  onsubmit="return confirm('Voulez-vous vraiment annuler cette demande de course ?');">
+                                <button type="submit" class="btn-danger btn-sm">Annuler</button>
+                            </form>
+                        {% endif %}
+
+                        <!-- Accepted or In Progress: Security / Share with family on WhatsApp -->
+                        {% if r.status in ['ACCEPTED', 'IN_PROGRESS'] %}
+                            <a href="https://wa.me/?text=Je%20suis%20en%20trajet%20MboaLift%20(Course%20%23{{ r.id }})%20de%20{{ r.pickup }}%20%C3%A0%20{{ r.destination }}%20avec%20le%20chauffeur%20{{ r.driver_name or 'assign%C3%A9' }}%20(Tel:%20{{ r.driver_phone or '-' }}).%20Suivi%20de%20s%C3%A9curit%C3%A9%20Douala."
+                               target="_blank" class="btn-safety btn-sm" title="Partager ce trajet pour votre sécurité">
+                                🛡️ Partager
+                            </a>
+                        {% endif %}
+
+                        <!-- Payment button -->
+                        {% if r.status in ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'] and r.payment_status != 'SUCCESSFUL' %}
+                            <a href="{{ url_for('payment', ride_id=r.id) }}" class="btn-primary btn-sm">Payer MoMo/OM</a>
+                        {% endif %}
+
+                        <!-- Rate button -->
+                        {% if r.status == 'COMPLETED' %}
+                            <a href="{{ url_for('rate_ride', ride_id=r.id) }}" class="btn-outline btn-sm">Noter ⭐</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Vous n'avez pas encore demandé de courses. <a href="{{ url_for('request_ride') }}">Demandez votre premier trajet</a>.</p>
+    {% endif %}
+</section>
+
+<section class="section">
+    <div class="section-header">
+        <h2>Trajets partagés rejoints</h2>
+        <a href="{{ url_for('shared_rides') }}" class="btn-outline btn-sm">Voir les covoiturages</a>
+    </div>
+
+    {% if joined_rides %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Itinéraire</th>
+                    <th>Créateur</th>
+                    <th>Chauffeur</th>
+                    <th>Tarif</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in joined_rides %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                    <td>{{ r.owner_name }}</td>
+                    <td>{{ r.driver_name or 'En recherche...' }}</td>
+                    <td>{{ "%.0f"|format(r.fare) }} XAF</td>
+                    <td><span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span></td>
+                    <td class="actions">
+                        {% if r.status == 'PENDING' %}
+                            <form method="POST" action="{{ url_for('leave_ride', ride_id=r.id) }}" style="display:inline;"
+                                  onsubmit="return confirm('Quitter ce trajet partagé ?');">
+                                <button type="submit" class="btn-outline btn-sm">Quitter</button>
+                            </form>
+                        {% endif %}
+                        {% if r.status == 'COMPLETED' %}
+                            <a href="{{ url_for('rate_ride', ride_id=r.id) }}" class="btn-outline btn-sm">Noter ⭐</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Vous n'avez rejoint aucun trajet partagé pour le moment.</p>
+    {% endif %}
+</section>
+{% endblock %}

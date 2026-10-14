@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Profile - MboaLift{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Profile</h1>
+</div>
+
+{% if user %}
+<div class="form-card">
+    <div class="profile-info">
+        <div class="info-row">
+            <span class="label">Full Name</span>
+            <span class="value">{{ user.full_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Phone</span>
+            <span class="value">{{ user.phone }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Email</span>
+            <span class="value">{{ user.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Member since</span>
+            <span class="value">{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '-' }}</span>
+        </div>
+    </div>
+</div>
+{% else %}
+<p class="empty-state">Could not load profile.</p>
+{% endif %}
+{% endblock %}

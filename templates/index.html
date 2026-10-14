@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Accueil - MboaLift | Réinventer la Mobilité à Douala{% endblock %}
+
+{% block content %}
+<section class="hero hero-premium">
+    <div class="hero-glow"></div>
+    <div class="hero-grid">
+        <div class="hero-content">
+            <div class="eyebrow"><span class="status-dot"></span> Réinventer le transport à Douala 🇨🇲</div>
+            <h1>Déplacez-vous plus vite.<br><span>Voyagez avec MboaLift.</span></h1>
+            <p class="hero-subtitle">
+                La plateforme de mobilité urbaine conçue sur-mesure pour Douala.
+                Choisissez entre <strong>Bendskin (Moto-Taxi)</strong> pour battre les embouteillages, 
+                <strong>Taxi Jaune</strong> pour vos trajets partagés, ou <strong>Voiture Confort</strong>.
+                Payez en toute sécurité par <strong>MTN MoMo</strong> et <strong>Orange Money</strong>.
+            </p>
+            <div class="hero-actions">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('request_ride') }}" class="btn-primary btn-lg">Commander une course</a>
+                    <a href="{{ url_for('shared_rides') }}" class="btn-outline btn-lg">Covoiturage urbain</a>
+                {% elif session.get('driver_id') %}
+                    <a href="{{ url_for('driver_available_rides') }}" class="btn-primary btn-lg">Courses disponibles</a>
+                    <a href="{{ url_for('driver_my_rides') }}" class="btn-outline btn-lg">Mes courses</a>
+                {% else %}
+                    <a href="{{ url_for('register') }}" class="btn-primary btn-lg">Passager : Inscription</a>
+                    <a href="{{ url_for('driver_register') }}" class="btn-outline btn-lg">Chauffeur : Inscription</a>
+                {% endif %}
+            </div>
+            {% if not session.get('user_id') and not session.get('driver_id') %}
+            <p style="margin-top:16px;opacity:0.9;font-size:0.95rem;">
+                Déjà inscrit ?
+                <a href="{{ url_for('login') }}" style="color:#fff;text-decoration:underline;">Connexion Passager</a>
+                &nbsp;|&nbsp;
+                <a href="{{ url_for('driver_login') }}" style="color:#fff;text-decoration:underline;">Connexion Chauffeur</a>
+            </p>
+            {% endif %}
+        </div>
+        <div class="hero-visual">
+            <div class="brand-showcase-card">
+                <img src="{{ url_for('static', filename='images/mboalift_logo.jpg') }}" alt="MboaLift Logo" class="showcase-logo-img">
+                <div class="showcase-caption">
+                    <strong>MboaLift</strong>
+                    <span>Douala Mobility Platform</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust & Local Features Strip -->
+<section class="trust-strip">
+    <div><strong>🇨🇲</strong><span>Pensé pour Douala</span></div>
+    <div><strong>🏍️</strong><span>Bendskin &amp; Taxis Jaunes</span></div>
+    <div><strong>💳</strong><span>MTN MoMo &amp; Orange Money</span></div>
+    <div><strong>🤖</strong><span>Assistant IA Local</span></div>
+    <div><strong>🛡️</strong><span>Partage Trajet Sécurité</span></div>
+</section>
+
+<!-- 3 Douala Ride Modes -->
+<section class="section">
+    <h2 class="section-title">Les 3 modes de transport MboaLift</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🏍️</div>
+            <h3>Bendskin (Moto-Taxi)</h3>
+            <p>Le sauveur des embouteillages de Douala. Slalome au Carrefour Ndokoti et sur le Pont du Wouri. Idéal pour 1 personne pressée (-30% économique).</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🚕</div>
+            <h3>Taxi Jaune (Standard)</h3>
+            <p>L'icône des rues de Douala. Jusqu'à 4 passagers, parfait pour les trajets quotidiens, les emplettes au marché et le covoiturage partagé.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🚗</div>
+            <h3>Voiture Confort (Privé VIP)</h3>
+            <p>Véhicule privé climatisé avec chauffeur attitré. Recommandé pour l'Aéroport de Douala, les réunions à Bonanjo et les soirées.</p>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <h2 class="section-title">Comment ça fonctionne ?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">1</div>
+            <h3>Inscription simple</h3>
+            <p>Créez un compte <strong>Passager</strong> pour commander, ou un compte <strong>Chauffeur</strong> pour accepter des courses.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">2</div>
+            <h3>Demandez ou Partagez</h3>
+            <p>Choisissez vos quartiers (Akwa, Bonamoussadi, Bonabéri, etc.) et visualisez le tarif transparent calculé par le serveur.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">3</div>
+            <h3>Paiement MoMo / Orange</h3>
+            <p>Dès l'acceptation par le chauffeur, validez votre paiement sécurisé directement par USSD sur votre téléphone.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">4</div>
+            <h3>Roulez en sécurité &amp; Notez</h3>
+            <p>Partagez les coordonnées de votre chauffeur avec vos proches par WhatsApp et attribuez une note à l'arrivée.</p>
+        </div>
+    </div>
+</section>
+
+<section class="locations-preview">
+    <h2 class="section-title">Lieux &amp; Quartiers desservis à Douala</h2>
+    <div class="location-tags">
+        <span>Akwa</span>
+        <span>Bonanjo</span>
+        <span>Bonamoussadi</span>
+        <span>Deido</span>
+        <span>Bépanda</span>
+        <span>Makepe</span>
+        <span>Bonapriso</span>
+        <span>Bali</span>
+        <span>New Bell</span>
+        <span>Ndokoti</span>
+        <span>Logbessou</span>
+        <span>Bonabéri</span>
+        <span>Aéroport</span>
+        <span>Japoma</span>
+        <span>Cité des Palmiers</span>
+    </div>
+</section>
+{% endblock %}

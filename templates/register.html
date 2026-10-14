@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Register - MboaLift{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <h1>Create Account</h1>
+    <p class="auth-subtitle">Join MboaLift today</p>
+
+    <form method="POST" action="{{ url_for('register') }}" id="registerForm" novalidate>
+        <div class="form-group">
+            <label for="full_name">Full Name</label>
+            <input type="text" id="full_name" name="full_name" required
+                   placeholder="e.g. Jean Mbarga" minlength="3">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" required
+                   placeholder="e.g. 670000000" pattern="[0-9]{9,15}">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required
+                   placeholder="e.g. jean@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required
+                   placeholder="At least 6 characters" minlength="6">
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" required
+                   placeholder="Repeat password" minlength="6">
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">Register</button>
+    </form>
+
+    <p class="auth-footer">
+        Already have an account? <a href="{{ url_for('login') }}">Rider Login</a><br>
+        Want to drive? <a href="{{ url_for('driver_register') }}">Register as Driver</a>
+    </p>
+</div>
+{% endblock %}

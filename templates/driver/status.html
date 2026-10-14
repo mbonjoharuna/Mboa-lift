@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}My Status - Driver{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Location & Availability</h1>
+    <p>Set where you are in Douala so passengers can see you as a free nearby driver.</p>
+</div>
+
+<div class="form-card">
+    {% if driver %}
+    <p><strong>{{ driver.full_name }}</strong>
+        {% if driver.vehicle_info %} — {{ driver.vehicle_info }}{% endif %}
+    </p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('driver_status') }}">
+        <div class="form-group">
+            <label for="current_location">Current area</label>
+            <select id="current_location" name="current_location" required>
+                <option value="">-- Select your area --</option>
+                {% for loc in locations %}
+                <option value="{{ loc }}"
+                    {% if driver and driver.current_location == loc %}selected{% endif %}>
+                    {{ loc }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="availability">Availability</label>
+            <select id="availability" name="availability" required>
+                <option value="free" {% if driver and driver.availability == 'free' %}selected{% endif %}>
+                    Free (can accept rides)
+                </option>
+                <option value="busy" {% if driver and driver.availability == 'busy' %}selected{% endif %}>
+                    Busy (on a trip)
+                </option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">Save Status</button>
+    </form>
+
+    <p class="secure-note" style="margin-top:16px;">
+        No GPS is used. Passengers see you when their pickup is in the same or nearby area.
+    </p>
+</div>
+{% endblock %}
