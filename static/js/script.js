@@ -136,11 +136,103 @@ function initFareCalculator() {
         });
     });
 
+    const cargoRadios = document.querySelectorAll('input[name="cargo_type"]');
+    const cargoCards = document.querySelectorAll('.cargo-card');
+    const fareCargoRow = document.getElementById("fareCargoRow");
+    const fareCargoAmount = document.getElementById("fareCargoAmount");
+    const cargoBendskinWarning = document.getElementById("cargoBendskinWarning");
+    const marketProximityAlert = document.getElementById("marketProximityAlert");
+    const marketProximityText = document.getElementById("marketProximityText");
+    const bendskinRadio = document.querySelector('input[name="vehicle_type"][value="bendskin"]');
+    const bendskinCard = bendskinRadio ? bendskinRadio.closest(".vehicle-card") : null;
+    const taxiRadio = document.querySelector('input[name="vehicle_type"][value="taxi"]');
+    const taxiCard = taxiRadio ? taxiRadio.closest(".vehicle-card") : null;
+
+    const MARKET_KEYWORDS = [
+        { key: "mboppi", name: "Marché Mboppi (Bépanda)", tip: "Vivres frais, manioc & commerce en gros" },
+        { key: "mbopi", name: "Marché Mboppi (Bépanda)", tip: "Vivres frais & commerce en gros" },
+        { key: "central", name: "Marché Central (New Bell)", tip: "Textiles, maroquinerie & vivres" },
+        { key: "sandaga", name: "Marché Sandaga", tip: "Grossistes vivres & régimes de plantains" },
+        { key: "dakar", name: "Marché Dakar (New Bell)", tip: "Vivres frais & friperie" },
+        { key: "deido", name: "Marché Deïdo", tip: "Poissons frais du Wouri & vivres" },
+        { key: "déïdo", name: "Marché Deïdo", tip: "Poissons frais du Wouri & vivres" },
+        { key: "new bell", name: "Secteur Marché Central / Sandaga", tip: "Pôle de commerce & vivres" },
+        { key: "newbell", name: "Secteur Marché Central / Sandaga", tip: "Pôle de commerce & vivres" },
+        { key: "bonabéri", name: "Marché Bonabéri", tip: "Vivriers provenant du Moungo" },
+        { key: "bonaberi", name: "Marché Bonabéri", tip: "Vivriers provenant du Moungo" },
+    ];
+
+    function checkMarketProximity(p, d) {
+        if (!marketProximityAlert) return;
+        const combined = ((p || "") + " " + (d || "")).toLowerCase();
+        let matchedMarket = null;
+        for (let i = 0; i < MARKET_KEYWORDS.length; i++) {
+            if (combined.indexOf(MARKET_KEYWORDS[i].key) !== -1) {
+                matchedMarket = MARKET_KEYWORDS[i];
+                break;
+            }
+        }
+        if (matchedMarket) {
+            marketProximityAlert.style.display = "flex";
+            if (marketProximityText) {
+                marketProximityText.textContent = "Proximité de " + matchedMarket.name + " (" + matchedMarket.tip + "). Si vous transportez des sacs ou cartons, optez pour l'option Marché (+300 F) pour filtrer un taxi avec coffre ou galerie.";
+            }
+        } else {
+            marketProximityAlert.style.display = "none";
+        }
+    }
+
+    function handleCargoCompatibility() {
+        const checkedCargo = document.querySelector('input[name="cargo_type"]:checked');
+        const cargoType = checkedCargo ? checkedCargo.value : "light";
+
+        // Update active class on cargo cards
+        cargoCards.forEach(card => {
+            const radio = card.querySelector('input[name="cargo_type"]');
+            if (radio && radio.checked) {
+                card.classList.add("active");
+            } else {
+                card.classList.remove("active");
+            }
+        });
+
+        // Bendskin cannot transport market cargo or heavy luggage
+        if (cargoType === "market" || cargoType === "heavy") {
+            if (cargoBendskinWarning) cargoBendskinWarning.style.display = "flex";
+            if (bendskinRadio) {
+                bendskinRadio.disabled = true;
+                if (bendskinCard) bendskinCard.classList.add("disabled-by-cargo");
+            }
+            if (bendskinRadio && bendskinRadio.checked && taxiRadio) {
+                taxiRadio.checked = true;
+                if (bendskinCard) bendskinCard.classList.remove("active");
+                if (taxiCard) taxiCard.classList.add("active");
+            }
+        } else {
+            if (cargoBendskinWarning) cargoBendskinWarning.style.display = "none";
+            if (bendskinRadio) {
+                bendskinRadio.disabled = false;
+                if (bendskinCard) bendskinCard.classList.remove("disabled-by-cargo");
+            }
+        }
+    }
+
+    cargoRadios.forEach(radio => {
+        radio.addEventListener("change", function() {
+            handleCargoCompatibility();
+            updateFare();
+        });
+    });
+
     function updateFare() {
         const p = pickup.value.trim();
         const d = destination.value.trim();
         const vehicleInput = document.querySelector('input[name="vehicle_type"]:checked');
         const vehicleType = vehicleInput ? vehicleInput.value : "taxi";
+        const cargoInput = document.querySelector('input[name="cargo_type"]:checked');
+        const cargoType = cargoInput ? cargoInput.value : "light";
+
+        checkMarketProximity(p, d);
 
         if (!p || !d) {
             fareBox.style.display = "none";
@@ -153,12 +245,18 @@ function initFareCalculator() {
             fareDestination.textContent = d;
             fareAmount.textContent = _t("Invalid (same location)");
             fareAmount.style.color = "#dc3545";
+            if (fareCargoRow) fareCargoRow.style.display = "none";
             if (streetNegotiationCard) streetNegotiationCard.style.display = "none";
             return;
         }
 
-        // Call the Flask API endpoint for the official fare with vehicle_type
-        fetch("/api/fare?pickup=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d) + "&vehicle_type=" + encodeURIComponent(vehicleType))
+        // Call the Flask API endpoint for the official fare with vehicle_type and cargo_type
+        const apiUrl = "/api/fare?pickup=" + encodeURIComponent(p) +
+                       "&destination=" + encodeURIComponent(d) +
+                       "&vehicle_type=" + encodeURIComponent(vehicleType) +
+                       "&cargo_type=" + encodeURIComponent(cargoType);
+
+        fetch(apiUrl)
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 fareBox.style.display = "block";
@@ -167,8 +265,19 @@ function initFareCalculator() {
                 if (fareMode) {
                     fareMode.textContent = data.vehicle_label || (vehicleType === "bendskin" ? "Bendskin 🏍️" : (vehicleType === "comfort" ? "Voiture Confort 🚗" : "Taxi Jaune 🚕"));
                 }
+
+                // Show cargo surcharge row if applicable
+                if (fareCargoRow && fareCargoAmount) {
+                    if (data.cargo_fee && data.cargo_fee > 0) {
+                        fareCargoRow.style.display = "flex";
+                        fareCargoAmount.textContent = "+" + formatNumber(data.cargo_fee) + " " + (data.currency || "XAF");
+                    } else {
+                        fareCargoRow.style.display = "none";
+                    }
+                }
+
                 if (data.fare !== null && data.fare !== undefined) {
-                    fareAmount.textContent = data.fare + " " + (data.currency || "XAF");
+                    fareAmount.textContent = formatNumber(data.fare) + " " + (data.currency || "XAF");
                     fareAmount.style.color = "";
                     currentBaseFare = data.fare;
                     if (streetNegotiationCard) {
@@ -194,22 +303,42 @@ function initFareCalculator() {
                 var baseEst = 1200;
                 if (vehicleType === "bendskin") baseEst = 850;
                 else if (vehicleType === "comfort") baseEst = 2200;
-                fareAmount.textContent = baseEst + " " + _t("XAF (estimate)");
+                var cargoExtra = (cargoType === "market") ? 300 : ((cargoType === "heavy") ? 600 : 0);
+                var totalEst = baseEst + cargoExtra;
+
+                if (fareCargoRow && fareCargoAmount) {
+                    if (cargoExtra > 0) {
+                        fareCargoRow.style.display = "flex";
+                        fareCargoAmount.textContent = "+" + cargoExtra + " XAF";
+                    } else {
+                        fareCargoRow.style.display = "none";
+                    }
+                }
+
+                fareAmount.textContent = formatNumber(totalEst) + " " + _t("XAF (estimate)");
                 fareAmount.style.color = "";
-                currentBaseFare = baseEst;
+                currentBaseFare = totalEst;
                 if (streetNegotiationCard) {
                     streetNegotiationCard.style.display = "block";
-                    setNegotiatedFare(baseEst);
+                    setNegotiatedFare(totalEst);
                 }
             });
     }
+
+    // Initialize cargo state
+    handleCargoCompatibility();
 
     pickup.addEventListener("change", updateFare);
     pickup.addEventListener("input", updateFare);
     destination.addEventListener("change", updateFare);
     destination.addEventListener("input", updateFare);
     document.querySelectorAll('input[name="vehicle_type"]').forEach(function(radio) {
-        radio.addEventListener("change", updateFare);
+        radio.addEventListener("change", function() {
+            document.querySelectorAll(".vehicle-card").forEach(c => c.classList.remove("active"));
+            const parent = this.closest(".vehicle-card");
+            if (parent) parent.classList.add("active");
+            updateFare();
+        });
     });
     window.addEventListener("languageChanged", function() {
         if (fareBox.style.display !== "none") updateFare();

@@ -160,6 +160,70 @@ def flash(message, category="message"):
     else:
         _flask_flash(message, category)
 
+# ============================================================
+# MARKET CARGO & HEAVY LUGGAGE OPTIONS (Douala Reality)
+# ============================================================
+CARGO_OPTIONS = {
+    "none": {
+        "id": "none",
+        "label_fr": "Sans bagage encombrant",
+        "label_en": "No bulky luggage",
+        "desc_fr": "Passager uniquement, sac à main ou petit sac à dos",
+        "desc_en": "Passenger only, handbag or small backpack",
+        "fee": 0,
+        "icon": "🚶",
+        "requires_trunk": False,
+        "badge_fr": "Standard",
+        "badge_en": "Standard"
+    },
+    "light": {
+        "id": "light",
+        "label_fr": "Petits colis / Sacs légers",
+        "label_en": "Small parcels / Light bags",
+        "desc_fr": "1 à 2 petits sacs ou cabas de commissions (gratuit)",
+        "desc_en": "1-2 small bags or shopping parcels (free)",
+        "fee": 0,
+        "icon": "📦",
+        "requires_trunk": False,
+        "badge_fr": "Gratuit",
+        "badge_en": "Free"
+    },
+    "market": {
+        "id": "market",
+        "label_fr": "Marchandises de marché / Plusieurs sacs",
+        "label_en": "Market goods / Multiple bags",
+        "desc_fr": "Sacs de plantains, manioc, vivres frais ou cartons de négoce (+300 FCFA)",
+        "desc_en": "Bags of plantains, cassava, fresh food or trade cartons (+300 FCFA)",
+        "fee": 300,
+        "icon": "🛒",
+        "requires_trunk": True,
+        "badge_fr": "+300 FCFA",
+        "badge_en": "+300 FCFA"
+    },
+    "heavy": {
+        "id": "heavy",
+        "label_fr": "Gros bagages / Coffre plein",
+        "label_en": "Heavy luggage / Full trunk",
+        "desc_fr": "Valises de voyage, sacs volumineux, malles ou coffre plein (+600 FCFA)",
+        "desc_en": "Travel suitcases, bulky bags, large trunks or full car trunk (+600 FCFA)",
+        "fee": 600,
+        "icon": "🧳",
+        "requires_trunk": True,
+        "badge_fr": "+600 FCFA",
+        "badge_en": "+600 FCFA"
+    },
+}
+
+DOUALA_MARKETS = [
+    {"name": "Marché Mboppi", "zone": "Bépanda", "desc": "Grand marché vivres & commerce gros", "keywords": ["mboppi", "mbopi", "bépanda", "bepanda"]},
+    {"name": "Marché Central", "zone": "New Bell", "desc": "Grand pôle commercial textiles & vivres", "keywords": ["central", "new bell", "newbell"]},
+    {"name": "Marché Sandaga", "zone": "New Bell", "desc": "Grossistes vivres frais et vivriers", "keywords": ["sandaga"]},
+    {"name": "Marché Dakar", "zone": "New Bell", "desc": "Marché vivres frais et friperie", "keywords": ["dakar"]},
+    {"name": "Marché Deido", "zone": "Deido", "desc": "Vivres et poissons frais du fleuve Wouri", "keywords": ["deido", "déïdo"]},
+    {"name": "Marché Bonabéri", "zone": "Bonabéri", "desc": "Hub vivriers en provenance du Moungo", "keywords": ["bonabéri", "bonaberi"]},
+]
+
+
 @app.before_request
 def resolve_locale():
     """Detect language from query param, cookie, session, or headers."""
@@ -178,7 +242,7 @@ def resolve_locale():
 
 @app.context_processor
 def inject_locale():
-    """Inject current_lang, active weather alert, emergency contacts, and USSD data into all templates."""
+    """Inject current_lang, active weather alert, emergency contacts, cargo options, and USSD data into all templates."""
     active_lang = getattr(g, "lang", "en")
     weather = get_active_weather_alert()
     return dict(
@@ -186,7 +250,9 @@ def inject_locale():
         douala_weather=weather,
         emergency_contacts=DOUALA_EMERGENCY_CONTACTS,
         douala_locations_coded=DOUALA_LOCATION_CODES,
-        douala_weather_all=DOUALA_WEATHER_CONDITIONS
+        douala_weather_all=DOUALA_WEATHER_CONDITIONS,
+        cargo_options=CARGO_OPTIONS,
+        douala_markets=DOUALA_MARKETS,
     )
 
 
@@ -596,12 +662,13 @@ def get_db():
 
 
 def init_db_schema():
-    """Ensure database schema has required columns for fare negotiation and other features."""
+    """Ensure database schema has required columns for fare negotiation, cargo add-ons, and driver features."""
     conn = get_db()
     if not conn:
         return
     try:
         cur = conn.cursor()
+        # Street Fare Negotiation columns on rides
         cur.execute("SHOW COLUMNS FROM rides LIKE 'original_fare'")
         if not cur.fetchone():
             cur.execute("ALTER TABLE rides ADD COLUMN original_fare DECIMAL(10, 2) NULL AFTER fare")
@@ -617,6 +684,24 @@ def init_db_schema():
         cur.execute("SHOW COLUMNS FROM rides LIKE 'counter_driver_id'")
         if not cur.fetchone():
             cur.execute("ALTER TABLE rides ADD COLUMN counter_driver_id INT NULL AFTER driver_counter_fare")
+
+        # Market Cargo & Heavy Luggage columns on rides
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'cargo_type'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN cargo_type ENUM('none', 'light', 'market', 'heavy') DEFAULT 'none' AFTER vehicle_type")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'cargo_fee'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN cargo_fee DECIMAL(10, 2) DEFAULT 0.00 AFTER cargo_type")
+
+        # Driver Cargo capability columns
+        cur.execute("SHOW COLUMNS FROM drivers LIKE 'has_trunk'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE drivers ADD COLUMN has_trunk BOOLEAN DEFAULT TRUE AFTER vehicle_type")
+
+        cur.execute("SHOW COLUMNS FROM drivers LIKE 'has_roof_rack'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE drivers ADD COLUMN has_roof_rack BOOLEAN DEFAULT FALSE AFTER has_trunk")
 
         conn.commit()
         cur.close()
@@ -1254,7 +1339,7 @@ def driver_available_rides():
             cur = conn.cursor(dictionary=True)
             cur.execute(
                 """
-                SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.fare,
+                SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.cargo_type, r.cargo_fee, r.fare,
                        r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
@@ -1284,7 +1369,7 @@ def driver_my_rides():
             cur = conn.cursor(dictionary=True)
             cur.execute(
                 """
-                SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.fare,
+                SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.cargo_type, r.cargo_fee, r.fare,
                        r.original_fare, r.negotiation_status,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
@@ -1572,6 +1657,8 @@ def driver_status():
         if request.method == "POST":
             location = normalize_location(request.form.get("current_location", ""))
             availability = request.form.get("availability", "free")
+            has_trunk = 1 if request.form.get("has_trunk") else 0
+            has_roof_rack = 1 if request.form.get("has_roof_rack") else 0
             if availability not in ("free", "busy"):
                 availability = "free"
             if not location:
@@ -1579,15 +1666,15 @@ def driver_status():
             else:
                 cur.execute(
                     """UPDATE drivers
-                       SET current_location = %s, availability = %s
+                       SET current_location = %s, availability = %s, has_trunk = %s, has_roof_rack = %s
                        WHERE id = %s""",
-                    (location, availability, driver_id)
+                    (location, availability, has_trunk, has_roof_rack, driver_id)
                 )
                 conn.commit()
                 flash("Your location and availability were updated.", "success")
 
         cur.execute(
-            """SELECT full_name, current_location, availability, vehicle_info
+            """SELECT full_name, current_location, availability, vehicle_info, vehicle_type, has_trunk, has_roof_rack
                FROM drivers WHERE id = %s""",
             (driver_id,)
         )
@@ -1629,7 +1716,7 @@ def dashboard():
             cur.execute(
                 """
                 SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
-                       r.driver_counter_fare, r.counter_driver_id, r.status, r.vehicle_type, r.created_at,
+                       r.driver_counter_fare, r.counter_driver_id, r.cargo_type, r.cargo_fee, r.status, r.vehicle_type, r.created_at,
                        d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info, d.current_location AS driver_location,
                        cd.full_name AS counter_driver_name, cd.phone AS counter_driver_phone, cd.vehicle_info AS counter_driver_vehicle
                 FROM rides r
@@ -1789,15 +1876,29 @@ def request_ride():
         if vehicle_type not in VEHICLE_TYPES:
             vehicle_type = "taxi"
 
+        cargo_type = request.form.get("cargo_type", "none").strip().lower()
+        if cargo_type not in CARGO_OPTIONS:
+            cargo_type = "none"
+        cargo_meta = CARGO_OPTIONS[cargo_type]
+        cargo_fee = float(cargo_meta.get("fee", 0.0))
+
+        # Enforce safety constraints: Bendskin moto-taxi cannot carry market goods or heavy luggage
+        if cargo_type in ("market", "heavy") and vehicle_type == "bendskin":
+            vehicle_type = "taxi"
+            flash("Le moto-taxi Bendskin ne peut pas transporter de marchandises de marché ou de gros bagages. Votre course a été automatiquement configurée en Taxi Jaune avec coffre.", "info")
+
         def _reload_form():
             return render_template(
                 "request_ride.html",
                 locations=LOCATIONS,
                 vehicle_types=VEHICLE_TYPES,
+                cargo_options=CARGO_OPTIONS,
+                douala_markets=DOUALA_MARKETS,
                 nearby_drivers=nearby_drivers,
                 selected_pickup=request.form.get("pickup", ""),
                 selected_destination=request.form.get("destination", ""),
                 selected_vehicle_type=vehicle_type,
+                selected_cargo_type=cargo_type,
             )
 
         if not pickup or not destination:
@@ -1821,25 +1922,27 @@ def request_ride():
             passengers = 1
             flash("Bendskin moto-taxi is strictly limited to 1 passenger for road safety in Douala.", "info")
 
-        base_fare = get_fare(pickup, destination, vehicle_type)
-        if base_fare is None:
+        base_route_fare = get_fare(pickup, destination, vehicle_type)
+        if base_route_fare is None:
             flash("Could not calculate fare for this route.", "danger")
             return _reload_form()
 
+        standard_total_fare = float(base_route_fare + cargo_fee)
+
         # Douala Street Fare Negotiation ("Marchandage à la Doualaise")
         negotiated_fare_input = request.form.get("negotiated_fare", "").strip()
-        fare = base_fare
-        original_fare = base_fare
+        fare = standard_total_fare
+        original_fare = standard_total_fare
         negotiation_status = "NONE"
 
         if negotiated_fare_input:
             try:
                 parsed_offer = float(negotiated_fare_input)
-                min_allowed = max(300.0, base_fare * 0.40)
-                max_allowed = base_fare * 3.0
-                if min_allowed <= parsed_offer <= max_allowed and abs(parsed_offer - base_fare) >= 1.0:
+                min_allowed = max(300.0, standard_total_fare * 0.40)
+                max_allowed = standard_total_fare * 3.0
+                if min_allowed <= parsed_offer <= max_allowed and abs(parsed_offer - standard_total_fare) >= 1.0:
                     fare = parsed_offer
-                    original_fare = base_fare
+                    original_fare = standard_total_fare
                     negotiation_status = "PROPOSED"
             except (ValueError, TypeError):
                 pass
@@ -1870,9 +1973,9 @@ def request_ride():
                 if cur.fetchone():
                     cur.execute(
                         """INSERT INTO rides
-                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status, status)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
-                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status)
+                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status, status)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
+                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status)
                     )
                     cur.execute(
                         "UPDATE drivers SET availability = 'busy' WHERE id = %s",
@@ -1896,9 +1999,9 @@ def request_ride():
             if not assigned:
                 cur.execute(
                     """INSERT INTO rides
-                       (user_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
-                    (session["user_id"], pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status)
+                       (user_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
+                    (session["user_id"], pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status)
                 )
                 if negotiation_status == "PROPOSED":
                     flash(
@@ -1906,8 +2009,9 @@ def request_ride():
                         "success"
                     )
                 else:
+                    cargo_msg = f" (+{int(cargo_fee)} XAF colis)" if cargo_fee > 0 else ""
                     flash(
-                        f"Ride requested successfully ({VEHICLE_TYPES[vehicle_type]['label']})! "
+                        f"Ride requested successfully ({VEHICLE_TYPES[vehicle_type]['label']}){cargo_msg}! "
                         f"Estimated fare: {int(round(fare))} XAF. Waiting for a driver to accept.",
                         "success"
                     )
@@ -1924,10 +2028,13 @@ def request_ride():
         "request_ride.html",
         locations=LOCATIONS,
         vehicle_types=VEHICLE_TYPES,
+        cargo_options=CARGO_OPTIONS,
+        douala_markets=DOUALA_MARKETS,
         nearby_drivers=nearby_drivers,
         selected_pickup=selected_pickup,
         selected_destination="",
         selected_vehicle_type="taxi",
+        selected_cargo_type="none",
     )
 
 
@@ -2665,9 +2772,11 @@ def ride_receipt(ride_id):
         vtype = ride["vehicle_type"] or "taxi"
         v_meta = VEHICLE_TYPES.get(vtype, VEHICLE_TYPES["taxi"])
         fare_total = float(ride["fare"])
+        cargo_fee = float(ride.get("cargo_fee") or 0.0)
+        fare_before_cargo = max(0.0, fare_total - cargo_fee)
 
-        base_standard = int(round(fare_total / v_meta["factor"])) if v_meta["factor"] > 0 else int(fare_total)
-        mode_adjustment = int(fare_total - base_standard)
+        base_standard = int(round(fare_before_cargo / v_meta["factor"])) if v_meta["factor"] > 0 else int(fare_before_cargo)
+        mode_adjustment = int(fare_before_cargo - base_standard)
 
         # Generate Verification URL and QR Code SVG
         verify_url = request.host_url.rstrip("/") + url_for("receipt_verify", ride_id=ride["id"], token=expected_token)
@@ -2697,6 +2806,7 @@ def ride_receipt(ride_id):
             security_hash=security_hash,
             base_standard=base_standard,
             mode_adjustment=mode_adjustment,
+            cargo_fee=cargo_fee,
             fare_total=fare_total,
             vehicle_meta=v_meta,
             expected_token=expected_token
@@ -3287,15 +3397,30 @@ def admin_payments():
 # ============================================================
 @app.route("/api/fare")
 def api_fare():
-    """Return fare for a given pickup/destination and optional vehicle_type (JSON)."""
+    """Return fare for a given pickup/destination, optional vehicle_type, and optional cargo_type (JSON)."""
     pickup = normalize_location(request.args.get("pickup", ""))
     destination = normalize_location(request.args.get("destination", ""))
     vehicle_type = request.args.get("vehicle_type", "taxi").lower()
+    cargo_type = request.args.get("cargo_type", "none").strip().lower()
+
     if vehicle_type not in VEHICLE_TYPES:
         vehicle_type = "taxi"
+
+    if cargo_type not in CARGO_OPTIONS:
+        cargo_type = "none"
+
+    # Enforce safety constraints: Bendskin cannot carry market goods or heavy luggage
+    if cargo_type in ("market", "heavy") and vehicle_type == "bendskin":
+        vehicle_type = "taxi"
+
     if not pickup or not destination or pickup == destination:
         return jsonify({"fare": None, "error": "Invalid locations"})
-    fare = get_fare(pickup, destination, vehicle_type)
+
+    base_fare = get_fare(pickup, destination, vehicle_type)
+    cargo_meta = CARGO_OPTIONS.get(cargo_type, CARGO_OPTIONS["none"])
+    cargo_fee = int(cargo_meta.get("fee", 0))
+    total_fare = (base_fare + cargo_fee) if base_fare is not None else None
+
     v_labels = {
         "bendskin": {"en": "Bendskin (Moto-Taxi) 🏍️", "fr": "Bendskin (Moto-Taxi) 🏍️"},
         "taxi": {"en": "Yellow Taxi (Standard) 🚕", "fr": "Taxi Jaune (Standard) 🚕"},
@@ -3303,8 +3428,13 @@ def api_fare():
     }
     active_lang = getattr(g, "lang", "en")
     label = v_labels.get(vehicle_type, {}).get(active_lang, VEHICLE_TYPES[vehicle_type]["label"])
+
     return jsonify({
-        "fare": fare,
+        "fare": total_fare,
+        "base_fare": base_fare,
+        "cargo_fee": cargo_fee,
+        "cargo_type": cargo_type,
+        "cargo_label": cargo_meta.get(f"label_{active_lang}", cargo_meta["label_fr"]),
         "currency": "XAF",
         "vehicle_type": vehicle_type,
         "vehicle_label": label
@@ -3316,9 +3446,11 @@ def api_fare():
 def api_nearby_drivers():
     """
     Return free drivers near a pickup location (JSON).
-    No GPS – uses driver's selected current_location and NEARBY map.
+    Filters by cargo compatibility if cargo_type is 'market' or 'heavy' (requires trunk or roof rack).
     """
     pickup = normalize_location(request.args.get("pickup", ""))
+    cargo_type = request.args.get("cargo_type", "none").strip().lower()
+
     if not pickup:
         return jsonify({"drivers": []})
 
@@ -3329,24 +3461,26 @@ def api_nearby_drivers():
         try:
             cur = conn.cursor(dictionary=True)
             placeholders = ",".join(["%s"] * len(nearby))
-            cur.execute(
-                f"""
-                SELECT id, full_name, phone, vehicle_info, current_location
+            sql = f"""
+                SELECT id, full_name, phone, vehicle_info, vehicle_type, current_location, has_trunk, has_roof_rack
                 FROM drivers
                 WHERE status = 'active'
                   AND availability = 'free'
                   AND current_location IN ({placeholders})
-                ORDER BY current_location, full_name
-                """,
-                tuple(nearby)
-            )
+            """
+            params = list(nearby)
+            if cargo_type in ("market", "heavy"):
+                sql += " AND vehicle_type != 'bendskin' AND (has_trunk = 1 OR has_roof_rack = 1 OR vehicle_type IN ('taxi', 'comfort'))"
+
+            sql += " ORDER BY current_location, full_name"
+            cur.execute(sql, tuple(params))
             drivers = cur.fetchall()
             cur.close()
         except Error:
             drivers = []
         finally:
             conn.close()
-    return jsonify({"drivers": drivers, "pickup": pickup})
+    return jsonify({"drivers": drivers, "pickup": pickup, "cargo_type": cargo_type})
 
 
 @app.route("/api/map-data")
@@ -3435,7 +3569,7 @@ def api_driver_alerts():
             cur.execute(
                 """
                 SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
-                       r.driver_counter_fare, r.vehicle_type, r.passengers,
+                       r.driver_counter_fare, r.vehicle_type, r.cargo_type, r.cargo_fee, r.passengers,
                        r.created_at, u.full_name AS rider_name
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
@@ -3458,6 +3592,8 @@ def api_driver_alerts():
                     "is_negotiated": is_neg,
                     "driver_counter_fare": int(round(float(r["driver_counter_fare"]))) if r.get("driver_counter_fare") else None,
                     "vehicle_type": r["vehicle_type"],
+                    "cargo_type": r.get("cargo_type") or "none",
+                    "cargo_fee": int(round(float(r.get("cargo_fee") or 0))),
                     "passengers": r["passengers"],
                     "rider_name": r["rider_name"],
                     "created_at": r["created_at"].isoformat() if r["created_at"] else None
@@ -3494,7 +3630,7 @@ def api_ride_status(ride_id):
         cur.execute(
             """
             SELECT r.id, r.user_id, r.driver_id, r.pickup, r.destination, r.passengers,
-                   r.vehicle_type, r.fare, r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
+                   r.vehicle_type, r.cargo_type, r.cargo_fee, r.fare, r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
                    r.status, r.created_at,
                    u.full_name AS rider_name, u.phone AS rider_phone,
                    d.full_name AS driver_name, d.phone AS driver_phone,

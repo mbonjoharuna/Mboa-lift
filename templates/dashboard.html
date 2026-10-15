@@ -69,6 +69,13 @@
         <span class="route-point start">📍 <strong>{{ active_ride.pickup }}</strong></span>
         <span class="route-arrow">➔</span>
         <span class="route-point end">🎯 <strong>{{ active_ride.destination }}</strong></span>
+        {% if active_ride.cargo_type and active_ride.cargo_type != 'none' %}
+            <span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:0.75rem;padding:3px 8px;border-radius:6px;margin-left:6px;">
+                {% if active_ride.cargo_type == 'market' %}🛒 Marché (+300 F)
+                {% elif active_ride.cargo_type == 'heavy' %}🧳 Coffre plein (+600 F)
+                {% else %}📦 Petits colis{% endif %}
+            </span>
+        {% endif %}
         <span class="detail-val fare-badge" style="margin-left:auto;">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
     </div>
 

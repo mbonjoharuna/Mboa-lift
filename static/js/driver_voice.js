@@ -134,20 +134,25 @@
     const pickup = ride.pickup || 'Douala';
     const isNegotiated = Boolean(ride.is_negotiated || ride.negotiation_status === 'PROPOSED');
 
+    let cargoSuffix = '';
+    if (ride.cargo_type === 'market') {
+      cargoSuffix = (lang === 'fr') ? ' avec colis de marché' : ' with market goods';
+    } else if (ride.cargo_type === 'heavy') {
+      cargoSuffix = (lang === 'fr') ? ' avec coffre plein' : ' with full luggage';
+    }
+
     let speechText = '';
     if (isNegotiated) {
       if (lang === 'fr') {
-        // Exact requested wording: "Offre négociée reçue à 1 200 FCFA"
-        speechText = `Offre négociée reçue à ${fareFormatted} FCFA`;
+        speechText = `Offre négociée reçue à ${fareFormatted} FCFA${cargoSuffix}`;
       } else {
-        speechText = `Negotiated offer received at ${fareFormatted} FCFA`;
+        speechText = `Negotiated offer received at ${fareFormatted} FCFA${cargoSuffix}`;
       }
     } else {
       if (lang === 'fr') {
-        // Exact requested prompt format: "Nouvelle course disponible à Akwa pour 1 500 FCFA"
-        speechText = `Nouvelle course disponible à ${pickup} pour ${fareFormatted} FCFA`;
+        speechText = `Nouvelle course disponible à ${pickup} pour ${fareFormatted} FCFA${cargoSuffix}`;
       } else {
-        speechText = `New ride available at ${pickup} for ${fareFormatted} FCFA`;
+        speechText = `New ride available at ${pickup} for ${fareFormatted} FCFA${cargoSuffix}`;
       }
     }
 
@@ -187,6 +192,13 @@
         <div style="font-size:0.75rem;color:#64748b;margin-bottom:2px;text-align:left;">
           Tarif initial calculé : <del>${formatFare(ride.original_fare)} XAF</del> (Proposition passager)
         </div>` : ''}
+        ${ride.cargo_type === 'market' ? `
+        <div style="font-size:0.75rem;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;text-align:left;font-weight:600;">
+          🛒 Marchandises de marché (+300 FCFA)
+        </div>` : (ride.cargo_type === 'heavy' ? `
+        <div style="font-size:0.75rem;background:#f3e8ff;color:#6b21a8;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;text-align:left;font-weight:600;">
+          🧳 Gros bagages / Coffre plein (+600 FCFA)
+        </div>` : '')}
         <div class="toast-route">
           <strong>📍 ${ride.pickup}</strong> ➔ <strong>🎯 ${ride.destination}</strong>
         </div>

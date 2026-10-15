@@ -637,6 +637,32 @@
                             </td>
                         </tr>
                         {% endif %}
+                        {% if ride.cargo_type and ride.cargo_type != 'none' %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {% if ride.cargo_type == 'market' %}
+                                        🛒 Option Marché &amp; Vivres frais (Marchandises / Plusieurs sacs)
+                                    {% elif ride.cargo_type == 'heavy' %}
+                                        🧳 Option Gros Colis &amp; Bagages volumineux (Coffre plein / Galerie)
+                                    {% else %}
+                                        📦 Option Petits colis / Sacs légers
+                                    {% endif %}
+                                </strong><br>
+                                <small style="color:#64748b;">
+                                    {% if ride.cargo_type == 'market' %}
+                                        Prise en charge de sacs de vivres (plantains, manioc, cartons de négoce)
+                                    {% elif ride.cargo_type == 'heavy' %}
+                                        Prise en charge de valises volumineuses / malles en coffre sécurisé
+                                    {% else %}
+                                        Sacs et petits colis légers
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>Option Bagages</td>
+                            <td class="text-right">+{{ "%.0f"|format(cargo_fee or ride.cargo_fee or 0) }} XAF</td>
+                        </tr>
+                        {% endif %}
                         <tr>
                             <td><strong>Total Hors Taxes (HT)</strong></td>
                             <td>Base imposable</td>

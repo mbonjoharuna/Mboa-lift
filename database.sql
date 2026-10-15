@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS drivers (
     password_hash VARCHAR(255) NOT NULL,
     vehicle_info VARCHAR(100) DEFAULT NULL,
     vehicle_type ENUM('bendskin', 'taxi', 'comfort') NOT NULL DEFAULT 'taxi',
+    has_trunk BOOLEAN NOT NULL DEFAULT TRUE,
+    has_roof_rack BOOLEAN NOT NULL DEFAULT FALSE,
     -- Current area in Douala (driver selects a known location e.g. Akwa, Ndokoti)
     current_location VARCHAR(50) DEFAULT NULL,
     -- free = available for rides, busy = on a trip
@@ -68,6 +70,8 @@ CREATE TABLE IF NOT EXISTS rides (
     destination VARCHAR(50) NOT NULL,
     passengers INT NOT NULL DEFAULT 1,
     vehicle_type ENUM('bendskin', 'taxi', 'comfort') NOT NULL DEFAULT 'taxi',
+    cargo_type ENUM('none', 'light', 'market', 'heavy') NOT NULL DEFAULT 'none',
+    cargo_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     fare DECIMAL(10, 2) NOT NULL,
     original_fare DECIMAL(10, 2) DEFAULT NULL,
     negotiation_status ENUM('NONE', 'PROPOSED', 'ACCEPTED', 'COUNTERED', 'DECLINED') DEFAULT 'NONE',

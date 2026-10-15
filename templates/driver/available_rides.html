@@ -57,6 +57,11 @@
                     {% else %}
                         <span class="badge badge-taxi">🚕 Taxi Jaune</span>
                     {% endif %}
+                    {% if r.cargo_type == 'market' %}
+                        <br><span class="badge badge-cargo-market" style="margin-top:4px;display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;">🛒 Marché (+300 F)</span>
+                    {% elif r.cargo_type == 'heavy' %}
+                        <br><span class="badge badge-cargo-heavy" style="margin-top:4px;display:inline-block;background:#f3e8ff;color:#6b21a8;border:1px solid #e9d5ff;">🧳 Coffre plein (+600 F)</span>
+                    {% endif %}
                     {% if r.negotiation_status == 'PROPOSED' %}
                         <br><span class="badge badge-negotiated" style="margin-top:4px;display:inline-block;">🤝 Marchandage</span>
                     {% elif r.negotiation_status == 'COUNTERED' %}

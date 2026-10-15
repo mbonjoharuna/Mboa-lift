@@ -133,6 +133,74 @@
                 <small id="paxNotice">Standard Taxi accepts up to 4 passengers. Bendskin accepts 1.</small>
             </div>
 
+            <!-- Market Cargo & Heavy Luggage Option ("Option Marché & Gros Colis") -->
+            <div class="cargo-option-section" id="cargoOptionSection">
+                <div class="cargo-section-header">
+                    <div class="cargo-title-block">
+                        <span class="cargo-header-icon">🧳</span>
+                        <div>
+                            <strong class="cargo-header-title">Option Marché &amp; Gros Colis</strong>
+                            <span class="cargo-header-subtitle">Idéal pour les vivres des marchés (Mboppi, Sandaga, Central) ou valises volumineuses</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Douala Market Proximity Alert Banner -->
+                <div class="market-proximity-alert" id="marketProximityAlert" style="display:none;">
+                    <span class="market-alert-icon">🛒</span>
+                    <div class="market-alert-content">
+                        <strong>Détection Marché Douala :</strong>
+                        <span id="marketProximityText">Zone commerciale ou vivrière détectée. Pensez à sélectionner l'option Marché pour filtrer un véhicule avec coffre ou galerie.</span>
+                    </div>
+                </div>
+
+                <!-- Cargo Selection Grid (Radio Cards) -->
+                <div class="cargo-cards-grid">
+                    <label class="cargo-card {% if (selected_cargo_type or 'none') in ['none', 'light'] %}active{% endif %}" id="cardCargoLight">
+                        <input type="radio" name="cargo_type" value="light" {% if (selected_cargo_type or 'none') in ['none', 'light'] %}checked{% endif %}>
+                        <div class="cargo-card-top">
+                            <span class="cargo-icon">📦</span>
+                            <span class="cargo-badge free">Gratuit (0 F)</span>
+                        </div>
+                        <div class="cargo-card-body">
+                            <strong>Petits colis / Sacs légers</strong>
+                            <small>Sacs à main, 1 ou 2 petits cabas de courses</small>
+                        </div>
+                    </label>
+
+                    <label class="cargo-card {% if selected_cargo_type == 'market' %}active{% endif %}" id="cardCargoMarket">
+                        <input type="radio" name="cargo_type" value="market" {% if selected_cargo_type == 'market' %}checked{% endif %}>
+                        <div class="cargo-card-top">
+                            <span class="cargo-icon">🛒</span>
+                            <span class="cargo-badge market">+300 FCFA</span>
+                        </div>
+                        <div class="cargo-card-body">
+                            <strong>Marchandises de marché</strong>
+                            <small>Sacs de plantains, manioc, vivres frais, cartons</small>
+                            <span class="cargo-equipment-tag">Coffre / Galerie requis</span>
+                        </div>
+                    </label>
+
+                    <label class="cargo-card {% if selected_cargo_type == 'heavy' %}active{% endif %}" id="cardCargoHeavy">
+                        <input type="radio" name="cargo_type" value="heavy" {% if selected_cargo_type == 'heavy' %}checked{% endif %}>
+                        <div class="cargo-card-top">
+                            <span class="cargo-icon">🧳</span>
+                            <span class="cargo-badge heavy">+600 FCFA</span>
+                        </div>
+                        <div class="cargo-card-body">
+                            <strong>Gros bagages / Coffre plein</strong>
+                            <small>Valises de voyage, grosses malles, cantines</small>
+                            <span class="cargo-equipment-tag">Coffre spacieux / Berline</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="cargo-bendskin-warning" id="cargoBendskinWarning" style="display:none;">
+                    <span>⚠️</span>
+                    <small>Le moto-taxi Bendskin est incompatible avec les marchandises de marché et gros bagages. Le Taxi Jaune avec coffre sera sélectionné automatiquement.</small>
+                </div>
+            </div>
+
             <!-- Dynamic Real-time Fare Box -->
             <div class="fare-box" id="fareBox" style="display:none;">
                 <div class="fare-row">
@@ -142,6 +210,10 @@
                 <div class="fare-row">
                     <span>Mode :</span>
                     <strong id="fareMode">Taxi Jaune</strong>
+                </div>
+                <div class="fare-row" id="fareCargoRow" style="display:none;">
+                    <span>Option Colis &amp; Bagages :</span>
+                    <strong id="fareCargoAmount">+0 XAF</strong>
                 </div>
                 <div class="fare-row fare-total">
                     <span>Tarif calculé :</span>
