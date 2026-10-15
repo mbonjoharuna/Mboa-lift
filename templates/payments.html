@@ -49,7 +49,9 @@
                             </button>
                         </form>
                     {% else %}
-                        <span style="color:#10b981;font-weight:600;">Validé</span>
+                        <a href="{{ url_for('ride_receipt', ride_id=p.ride_id) }}" target="_blank" class="btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:4px;" title="Reçu officiel pour remboursement note de frais">
+                            📄 Reçu PDF
+                        </a>
                     {% endif %}
                 </td>
             </tr>

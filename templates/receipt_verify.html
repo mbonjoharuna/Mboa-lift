@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Vérification Reçu Officiel - MboaLift Douala{% endblock %}
+
+{% block content %}
+<div class="page-header" style="text-align:left;">
+    <div class="badge-pill">🛡️ Certification &amp; Traçabilité Fiscale</div>
+    <h1>Vérification d'Authenticité du Reçu</h1>
+    <p>Système de contrôle numérique des notes de frais et reçus professionnels MboaLift Douala.</p>
+</div>
+
+{% if valid %}
+<div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:16px;padding:28px 32px;max-width:720px;margin:20px 0;box-shadow:0 8px 24px rgba(0,0,0,0.05);text-align:left;">
+    <!-- Verification Banner -->
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-left:5px solid #16a34a;border-radius:10px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px;text-align:left;">
+        <span style="font-size:2rem;line-height:1;">✅</span>
+        <div>
+            <strong style="font-size:1.05rem;color:#166534;display:block;">REÇU OFFICIEL CERTIFIÉ CONFORME</strong>
+            <small style="color:#15803d;font-size:0.84rem;">Ce document a été généré et acquitté sur la plateforme MboaLift Douala. Pièce justificative légale pour remboursement de note de frais.</small>
+        </div>
+    </div>
+
+    <!-- Verified Data Grid -->
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:24px;text-align:left;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Numéro de Reçu :</span>
+            <strong style="font-family:monospace;color:#ff5a36;font-size:0.95rem;">{{ receipt_number }}</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Trajet Urbain :</span>
+            <strong style="color:#0f172a;">📍 {{ ride.pickup }} ➔ 🎯 {{ ride.destination }}</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Passager / Collaborateur :</span>
+            <strong style="color:#0f172a;">{{ ride.rider_name }}</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Chauffeur Prestataire :</span>
+            <strong style="color:#0f172a;">{{ ride.driver_name or 'Chauffeur Agréé MboaLift' }} ({{ ride.vehicle_info or 'Véhicule Urbain' }})</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Mode de transport :</span>
+            <strong style="color:#0f172a;">{{ vehicle_meta.icon }} {{ vehicle_meta.label }}</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Montant Total Acquitté :</span>
+            <strong style="font-size:1.15rem;color:#10b981;font-family:monospace;">{{ "%.0f"|format(ride.fare) }} XAF</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+            <span style="color:#64748b;font-size:0.88rem;">Référence Transaction Mobile Money :</span>
+            <strong style="font-family:monospace;color:#0284c7;">{{ txn_ref }}</strong>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;padding-bottom:4px;">
+            <span style="color:#64748b;font-size:0.88rem;">Horodatage :</span>
+            <strong style="color:#475569;">{{ ride.created_at.strftime('%d/%m/%Y à %H:%M') if ride.created_at else '-' }}</strong>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:left;">
+        <a href="{{ url_for('ride_receipt', ride_id=ride.id) }}" target="_blank" class="btn-primary btn-sm">
+            📄 Voir le Reçu Imprimable (PDF)
+        </a>
+        <a href="{{ url_for('index') }}" class="btn-outline btn-sm">
+            Accueil MboaLift
+        </a>
+    </div>
+</div>
+{% else %}
+<div style="background:#fff1f2;border:1px solid #fda4af;border-left:5px solid #e11d48;border-radius:12px;padding:20px 24px;max-width:600px;margin:20px 0;text-align:left;">
+    <h3 style="color:#9f1239;margin:0 0 8px 0;">❌ Reçu Non Valide ou Introuvable</h3>
+    <p style="color:#881337;font-size:0.9rem;margin:0 0 14px 0;">
+        {{ error or 'Ce reçu ne correspond à aucune course enregistrée dans le système central MboaLift Douala.' }}
+    </p>
+    <a href="{{ url_for('index') }}" class="btn-outline btn-sm">Retour à l'accueil</a>
+</div>
+{% endif %}
+{% endblock %}

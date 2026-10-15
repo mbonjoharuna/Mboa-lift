@@ -160,6 +160,9 @@
     // Update Pay / Actions Buttons
     if (actionsEl) {
       let payBtn = actionsEl.querySelector('.btn-pay-action');
+      let receiptBtn = actionsEl.querySelector('.btn-receipt-action');
+      let paidBadge = actionsEl.querySelector('.paid-status-badge');
+
       if (ride.status !== 'PENDING' && !ride.is_paid) {
         if (!payBtn) {
           payBtn = document.createElement('a');
@@ -168,12 +171,22 @@
           payBtn.textContent = '💳 Payer par MoMo / OM (' + ride.fare + ' XAF)';
           actionsEl.appendChild(payBtn);
         }
-      } else if (ride.is_paid && payBtn) {
-        payBtn.remove();
-        const paidBadge = document.createElement('span');
-        paidBadge.className = 'badge badge-success';
-        paidBadge.textContent = 'Paiement validé ✅';
-        actionsEl.appendChild(paidBadge);
+      } else if (ride.is_paid) {
+        if (payBtn) payBtn.remove();
+        if (!paidBadge && !actionsEl.querySelector('.badge-success')) {
+          paidBadge = document.createElement('span');
+          paidBadge.className = 'badge badge-success paid-status-badge';
+          paidBadge.textContent = 'Paiement validé ✅';
+          actionsEl.appendChild(paidBadge);
+        }
+        if (!receiptBtn && !actionsEl.querySelector('a[href*="/receipt/"]')) {
+          receiptBtn = document.createElement('a');
+          receiptBtn.className = 'btn-outline btn-sm btn-receipt-action';
+          receiptBtn.href = '/receipt/' + ride.id;
+          receiptBtn.target = '_blank';
+          receiptBtn.innerHTML = '📄 Reçu PDF & QR Code';
+          actionsEl.appendChild(receiptBtn);
+        }
       }
     }
   }

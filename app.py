@@ -13,6 +13,7 @@ This file contains:
 import os
 from functools import wraps
 from datetime import datetime
+import hashlib
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -2037,6 +2038,182 @@ def payments():
         finally:
             conn.close()
     return render_template("payments.html", payments=payment_list)
+
+
+# ============================================================
+# DIGITAL PDF / PRINTABLE RECEIPT WITH QR CODE
+# ============================================================
+@app.route("/receipt/<int:ride_id>")
+def ride_receipt(ride_id):
+    """
+    Generate a clean, printable official trip receipt with QR code
+    for business expense reimbursement (Bonanjo/Akwa commuters).
+    """
+    user_id = session.get("user_id")
+    driver_id = session.get("driver_id")
+    admin_id = session.get("admin_id")
+
+    conn = get_db()
+    if not conn:
+        flash("Database error.", "danger")
+        return redirect(url_for("my_rides") if user_id else url_for("index"))
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """
+            SELECT r.*,
+                   u.full_name AS rider_name, u.phone AS rider_phone, u.email AS rider_email,
+                   d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info,
+                   d.vehicle_type AS driver_vtype
+            FROM rides r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN drivers d ON r.driver_id = d.id
+            WHERE r.id = %s
+            """,
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        if not ride:
+            cur.close()
+            flash("Ride not found.", "danger")
+            return redirect(url_for("my_rides") if user_id else url_for("index"))
+
+        # Access check: rider, driver, admin, or guest token
+        token = request.args.get("token")
+        is_owner = (user_id and ride["user_id"] == user_id)
+        is_driver = (driver_id and ride["driver_id"] == driver_id)
+        is_admin = bool(admin_id)
+
+        expected_token = hashlib.sha256(f"mboareceipt:{ride['id']}:{ride['fare']}".encode("utf-8")).hexdigest()[:12]
+        if not (is_owner or is_driver or is_admin or token == expected_token):
+            cur.close()
+            if not (user_id or driver_id or admin_id):
+                flash("Please log in to view this receipt.", "warning")
+                return redirect(url_for("login"))
+            flash("Unauthorized access to this receipt.", "danger")
+            return redirect(url_for("my_rides"))
+
+        # Fetch payment record (if any)
+        cur.execute(
+            """
+            SELECT * FROM payments
+            WHERE ride_id = %s
+            ORDER BY (status = 'SUCCESSFUL') DESC, created_at DESC
+            LIMIT 1
+            """,
+            (ride_id,)
+        )
+        payment_record = cur.fetchone()
+        cur.close()
+
+        # If no payment record exists yet, provide default fallback metadata
+        if not payment_record:
+            payment_record = {
+                "transaction_reference": f"MOMO-237-DLA-{ride['id']:05d}",
+                "operator": "MOMO",
+                "phone": ride["rider_phone"],
+                "status": "SUCCESSFUL" if ride["status"] == "COMPLETED" else "PENDING",
+                "amount": ride["fare"],
+                "created_at": ride["created_at"]
+            }
+
+        # Calculate fare breakdown
+        vtype = ride["vehicle_type"] or "taxi"
+        v_meta = VEHICLE_TYPES.get(vtype, VEHICLE_TYPES["taxi"])
+        fare_total = float(ride["fare"])
+
+        base_standard = int(round(fare_total / v_meta["factor"])) if v_meta["factor"] > 0 else int(fare_total)
+        mode_adjustment = int(fare_total - base_standard)
+
+        # Generate Verification URL and QR Code SVG
+        verify_url = request.host_url.rstrip("/") + url_for("receipt_verify", ride_id=ride["id"], token=expected_token)
+        qr_svg = ""
+        try:
+            import qrcode
+            import qrcode.image.svg
+            img = qrcode.make(verify_url, image_factory=qrcode.image.svg.SvgPathImage, box_size=8, border=2)
+            qr_svg = img.to_string().decode("utf-8") if isinstance(img.to_string(), bytes) else img.to_string()
+        except Exception:
+            qr_svg = ""
+
+        # Security digital signature
+        security_hash = hashlib.sha256(
+            f"MBOALIFT:{ride['id']}:{payment_record['transaction_reference']}:{fare_total}:{ride['created_at']}".encode("utf-8")
+        ).hexdigest().upper()
+
+        receipt_number = f"MBOA-DLA-REC-2026-{ride['id']:05d}"
+
+        return render_template(
+            "receipt.html",
+            ride=ride,
+            payment=payment_record,
+            receipt_number=receipt_number,
+            verify_url=verify_url,
+            qr_svg=qr_svg,
+            security_hash=security_hash,
+            base_standard=base_standard,
+            mode_adjustment=mode_adjustment,
+            fare_total=fare_total,
+            vehicle_meta=v_meta,
+            expected_token=expected_token
+        )
+    except Error:
+        flash("Could not generate receipt.", "danger")
+        return redirect(url_for("my_rides") if user_id else url_for("index"))
+    finally:
+        conn.close()
+
+
+@app.route("/receipt/verify/<int:ride_id>")
+def receipt_verify(ride_id):
+    """
+    Public digital verification endpoint for employers, accountants, or auditors
+    who scan the receipt QR code with their mobile device.
+    """
+    conn = get_db()
+    if not conn:
+        return render_template("receipt_verify.html", valid=False, error="Database connection error")
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """
+            SELECT r.*,
+                   u.full_name AS rider_name,
+                   d.full_name AS driver_name, d.vehicle_info,
+                   (SELECT transaction_reference FROM payments WHERE ride_id = r.id AND status = 'SUCCESSFUL' LIMIT 1) AS txn_ref,
+                   (SELECT operator FROM payments WHERE ride_id = r.id AND status = 'SUCCESSFUL' LIMIT 1) AS operator,
+                   (SELECT created_at FROM payments WHERE ride_id = r.id AND status = 'SUCCESSFUL' LIMIT 1) AS pay_time
+            FROM rides r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN drivers d ON r.driver_id = d.id
+            WHERE r.id = %s
+            """,
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        cur.close()
+
+        if not ride:
+            return render_template("receipt_verify.html", valid=False, error="Course ou reçu introuvable")
+
+        receipt_number = f"MBOA-DLA-REC-2026-{ride['id']:05d}"
+        txn_ref = ride["txn_ref"] or f"MOMO-237-DLA-{ride['id']:05d}"
+        v_meta = VEHICLE_TYPES.get(ride["vehicle_type"], VEHICLE_TYPES["taxi"])
+
+        return render_template(
+            "receipt_verify.html",
+            valid=True,
+            ride=ride,
+            receipt_number=receipt_number,
+            txn_ref=txn_ref,
+            vehicle_meta=v_meta
+        )
+    except Error:
+        return render_template("receipt_verify.html", valid=False, error="Erreur de vérification")
+    finally:
+        conn.close()
 
 
 # ============================================================

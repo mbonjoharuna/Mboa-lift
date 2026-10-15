@@ -112,6 +112,9 @@
             </a>
         {% else %}
             <span class="badge badge-success">Paiement validé ✅</span>
+            <a href="{{ url_for('ride_receipt', ride_id=active_ride.id) }}" target="_blank" class="btn-outline btn-sm">
+                📄 Reçu PDF &amp; QR Code
+            </a>
         {% endif %}
         <a href="{{ url_for('my_rides') }}" class="btn-outline btn-sm">Détails de mes courses</a>
     </div>

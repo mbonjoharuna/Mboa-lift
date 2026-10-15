@@ -91,6 +91,13 @@
                         {% if r.status == 'COMPLETED' %}
                             <a href="{{ url_for('rate_ride', ride_id=r.id) }}" class="btn-outline btn-sm">Noter ⭐</a>
                         {% endif %}
+
+                        <!-- Receipt button for expense reimbursement -->
+                        {% if r.status in ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'] and r.payment_status == 'SUCCESSFUL' %}
+                            <a href="{{ url_for('ride_receipt', ride_id=r.id) }}" target="_blank" class="btn-outline btn-sm" title="Reçu PDF avec QR Code pour note de frais">📄 Reçu PDF</a>
+                        {% elif r.status == 'COMPLETED' %}
+                            <a href="{{ url_for('ride_receipt', ride_id=r.id) }}" target="_blank" class="btn-outline btn-sm" title="Reçu de course">📄 Reçu</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

@@ -489,6 +489,69 @@
       'Book via USSD (*999#)': 'Réserver par USSD (*999#)',
       'No internet connection?': 'Pas de connexion internet ?',
       'Book for free with no mobile data via USSD (*999#) or SMS.': 'Réservez gratuitement sans données mobiles via USSD (*999#) ou SMS.',
+
+      // Digital Trip Receipt & Tax Verification
+      'Official Trip Receipt': 'Reçu Officiel de Course',
+      'Official Receipt': 'Reçu Officiel Acquitté',
+      'Official Receipt Certified Compliant': 'Reçu Officiel Certifié Conforme',
+      'Back to my rides': 'Retour à mes courses',
+      'Payment history': 'Historique paiements',
+      'Print / Save as PDF (A4)': 'Imprimer / Enregistrer en PDF (A4)',
+      'Print / Save in PDF (A4)': 'Imprimer / Enregistrer en PDF (A4)',
+      'Certified multimodal urban transport platform Douala': 'Plateforme agréée de transport urbain multimodal Douala',
+      'Tax Proof & Expense Reimbursement Voucher': 'Justificatif Fiscal & Remboursement Note de Frais',
+      'Tax Proof & Expense Voucher': 'Justificatif Fiscal & Remboursement Note de Frais',
+      'Issued on': 'Émis le',
+      'Trip completed in Douala :': 'Trajet effectué à Douala :',
+      'Passenger / Beneficiary Employee': 'Passager / Collaborateur Bénéficiaire',
+      'Certified Transport Provider': 'Prestataire de Transport Assermenté',
+      'Professional commute Douala (Akwa / Bonanjo)': 'Déplacement professionnel Douala (Akwa / Bonanjo)',
+      'Certified Urban Vehicle': 'Véhicule Agréé Urbain',
+      'MboaLift Douala Certified Network Fleet': 'Flotte MboaLift Douala Réseau Certifié',
+      'Service Description': 'Désignation de la prestation',
+      'Service Type': 'Type de service',
+      'Amount (XAF)': 'Montant (XAF)',
+      'Urban ride Douala': 'Course urbaine Douala',
+      'Safe urban pickup and transit': 'Prise en charge et acheminement urbain sécurisé',
+      'Standard Ride': 'Trajet Standard',
+      'Transport mode adjustment': 'Ajustement mode de transport',
+      'Mode Adjustment': 'Ajustement Mode',
+      'Air-conditioned VIP comfort option with private driver': 'Option confort VIP climatisé et chauffeur privé',
+      'Economic Bendskin traffic-beating pricing (-30%)': 'Tarification économique Bendskin anti-bouchons (-30%)',
+      'Total Excluding Tax (HT)': 'Total Hors Taxes (HT)',
+      'Taxable base': 'Base imposable',
+      'Value Added Tax (VAT)': 'Taxe sur la Valeur Ajoutée (TVA)',
+      'Urban passenger transport exemption scheme (CGI Cameroon)': 'Régime d\'exonération transport urbain de personnes (CGI Cameroun)',
+      'VAT 0%': 'TVA 0%',
+      'Net Paid (TTC) :': 'Net Payé (TTC) :',
+      'Net Paid (TTC)': 'Net Payé (TTC)',
+      'Payment confirmed via Orange Money Cameroon': 'Paiement validé via Orange Money Cameroun',
+      'Payment confirmed via MTN Mobile Money (MoMo)': 'Paiement validé via MTN Mobile Money (MoMo)',
+      'Transaction Ref. :': 'Réf. Transaction :',
+      'Debited account :': 'Compte débité :',
+      'VALIDATED & SETTLED': 'VALIDÉ & ACQUITTÉ',
+      '✓ VALIDATED & SETTLED': '✓ VALIDÉ & ACQUITTÉ',
+      'Digital Certification & Expense Voucher': 'Certification Numérique & Note de Frais',
+      'Scan this QR Code to verify the authenticity of this receipt on MboaLift server.': 'Scannez ce QR Code pour vérifier l\'authenticité de cette facture sur le serveur MboaLift.',
+      'Receipt Authenticity Verification': 'Vérification d\'Authenticité du Reçu',
+      'Tax Certification & Audit Trail': 'Certification & Traçabilité Fiscale',
+      'Digital verification system for business expense vouchers and receipts in Douala.': 'Système de contrôle numérique des notes de frais et reçus professionnels MboaLift Douala.',
+      'OFFICIAL RECEIPT CERTIFIED COMPLIANT': 'REÇU OFFICIEL CERTIFIÉ CONFORME',
+      'This document was generated and settled on the MboaLift Douala platform. Legal proof for corporate expense reimbursement.': 'Ce document a été généré et acquitté sur la plateforme MboaLift Douala. Pièce justificative légale pour remboursement de note de frais.',
+      'Receipt Number :': 'Numéro de Reçu :',
+      'Urban Trip :': 'Trajet Urbain :',
+      'Passenger / Employee :': 'Passager / Collaborateur :',
+      'Provider Driver :': 'Chauffeur Prestataire :',
+      'Total Amount Settled :': 'Montant Total Acquitté :',
+      'Mobile Money Transaction Reference :': 'Référence Transaction Mobile Money :',
+      'Timestamp :': 'Horodatage :',
+      'View Printable Receipt (PDF)': 'Voir le Reçu Imprimable (PDF)',
+      'Printable Receipt': 'Reçu Imprimable',
+      'PDF Receipt': 'Reçu PDF',
+      'PDF Receipt & QR Code': 'Reçu PDF & QR Code',
+      'Invalid or Not Found Receipt': 'Reçu Non Valide ou Introuvable',
+      'Back to home': 'Retour à l\'accueil',
+      'MboaLift Home': 'Accueil MboaLift',
     },
 
     // French -> English (allows flawless switching back to English on French templates!)
@@ -903,6 +966,73 @@
       'Réserver par USSD (*999#)': 'Book via USSD (*999#)',
       'Pas de connexion internet ?': 'No internet connection?',
       'Réservez gratuitement sans données mobiles via USSD (*999#) ou SMS.': 'Book for free with no mobile data via USSD (*999#) or SMS.',
+
+      // Digital Trip Receipt & Tax Verification
+      'Reçu Officiel de Course': 'Official Trip Receipt',
+      'Reçu Officiel Acquitté': 'Official Receipt',
+      'Reçu Officiel Certifié Conforme': 'Official Receipt Certified Compliant',
+      '← Retour à mes courses': '← Back to my rides',
+      'Retour à mes courses': 'Back to my rides',
+      'Historique paiements': 'Payment history',
+      '🖨️ Imprimer / Enregistrer en PDF (A4)': '🖨️ Print / Save as PDF (A4)',
+      'Imprimer / Enregistrer en PDF (A4)': 'Print / Save as PDF (A4)',
+      'Plateforme agréée de transport urbain multimodal Douala': 'Certified multimodal urban transport platform Douala',
+      'Justificatif Fiscal & Remboursement Note de Frais': 'Tax Proof & Expense Reimbursement Voucher',
+      'Justificatif Fiscal & Note de Frais': 'Tax Proof & Expense Voucher',
+      'Émis le': 'Issued on',
+      'Trajet effectué à Douala :': 'Trip completed in Douala :',
+      'Passager / Collaborateur Bénéficiaire': 'Passenger / Beneficiary Employee',
+      'Prestataire de Transport Assermenté': 'Certified Transport Provider',
+      'Déplacement professionnel Douala (Akwa / Bonanjo)': 'Professional commute Douala (Akwa / Bonanjo)',
+      'Véhicule Agréé Urbain': 'Certified Urban Vehicle',
+      'Flotte MboaLift Douala Réseau Certifié': 'MboaLift Douala Certified Network Fleet',
+      'Désignation de la prestation': 'Service Description',
+      'Type de service': 'Service Type',
+      'Montant (XAF)': 'Amount (XAF)',
+      'Prise en charge et acheminement urbain sécurisé': 'Safe urban pickup and transit',
+      'Trajet Standard': 'Standard Ride',
+      'Ajustement mode de transport': 'Transport mode adjustment',
+      'Ajustement Mode': 'Mode Adjustment',
+      'Option confort VIP climatisé et chauffeur privé': 'Air-conditioned VIP comfort option with private driver',
+      'Tarification économique Bendskin anti-bouchons (-30%)': 'Economic Bendskin traffic-beating pricing (-30%)',
+      'Total Hors Taxes (HT)': 'Total Excluding Tax (HT)',
+      'Base imposable': 'Taxable base',
+      'Taxe sur la Valeur Ajoutée (TVA)': 'Value Added Tax (VAT)',
+      'Régime d\'exonération transport urbain de personnes (CGI Cameroun)': 'Urban passenger transport exemption scheme (CGI Cameroon)',
+      'TVA 0%': 'VAT 0%',
+      'Net Payé (TTC) :': 'Net Paid (TTC) :',
+      'Net Payé (TTC)': 'Net Paid (TTC)',
+      'Paiement validé via Orange Money Cameroun': 'Payment confirmed via Orange Money Cameroon',
+      'Paiement validé via MTN Mobile Money (MoMo)': 'Payment confirmed via MTN Mobile Money (MoMo)',
+      'Réf. Transaction :': 'Transaction Ref. :',
+      'Compte débité :': 'Debited account :',
+      'VALIDÉ & ACQUITTÉ': 'VALIDATED & SETTLED',
+      '✓ VALIDÉ & ACQUITTÉ': '✓ VALIDATED & SETTLED',
+      'Certification Numérique & Note de Frais': 'Digital Certification & Expense Voucher',
+      'Scannez ce QR Code pour vérifier l\'authenticité de cette facture sur le serveur MboaLift.': 'Scan this QR Code to verify the authenticity of this receipt on MboaLift server.',
+      'Vérification d\'Authenticité du Reçu': 'Receipt Authenticity Verification',
+      'Certification & Traçabilité Fiscale': 'Tax Certification & Audit Trail',
+      'Système de contrôle numérique des notes de frais et reçus professionnels MboaLift Douala.': 'Digital verification system for business expense vouchers and receipts in Douala.',
+      'REÇU OFFICIEL CERTIFIÉ CONFORME': 'OFFICIAL RECEIPT CERTIFIED COMPLIANT',
+      'Ce document a été généré et acquitté sur la plateforme MboaLift Douala. Pièce justificative légale pour remboursement de note de frais.': 'This document was generated and settled on the MboaLift Douala platform. Legal proof for corporate expense reimbursement.',
+      'Numéro de Reçu :': 'Receipt Number :',
+      'Trajet Urbain :': 'Urban Trip :',
+      'Passager / Collaborateur :': 'Passenger / Employee :',
+      'Chauffeur Prestataire :': 'Provider Driver :',
+      'Montant Total Acquitté :': 'Total Amount Settled :',
+      'Référence Transaction Mobile Money :': 'Mobile Money Transaction Reference :',
+      'Horodatage :': 'Timestamp :',
+      '📄 Voir le Reçu Imprimable (PDF)': '📄 View Printable Receipt (PDF)',
+      'Voir le Reçu Imprimable (PDF)': 'View Printable Receipt (PDF)',
+      '📄 Reçu PDF': '📄 PDF Receipt',
+      'Reçu PDF': 'PDF Receipt',
+      '📄 Reçu PDF & QR Code': '📄 PDF Receipt & QR Code',
+      'Reçu PDF & QR Code': 'PDF Receipt & QR Code',
+      '❌ Reçu Non Valide ou Introuvable': '❌ Invalid or Not Found Receipt',
+      'Reçu Non Valide ou Introuvable': 'Invalid or Not Found Receipt',
+      'Retour à l\'accueil': 'Back to home',
+      'Accueil MboaLift': 'MboaLift Home',
+      'Ce reçu dématérialisé est émis conformément aux dispositions légales régissant le transport urbain et la facturation électronique au Cameroun. Il vaut justificatif de dépense professionnelle auprès des services comptables et fiscaux d\'entreprise. Pour toute réclamation, contactez le service d\'assistance MboaLift Douala : support@mboalift.cm / (+237) 233 42 04 04.': 'This electronic receipt is issued in compliance with legal regulations governing urban transport and electronic invoicing in Cameroon. It serves as official proof of business travel expenses for corporate accounting and tax filing. For inquiries, contact MboaLift Douala support: support@mboalift.cm / (+237) 233 42 04 04.',
     }
   };
 
@@ -939,6 +1069,11 @@
       out = out.replace(/\bTotal Users:\s*(\d+)/gi, 'Total des utilisateurs : $1');
       out = out.replace(/\bMember since\s*/gi, 'Membre depuis ');
       out = out.replace(/\bSearching\.\.\./gi, 'En recherche...');
+      out = out.replace(/\bOfficial Trip Receipt\s*-\s*([A-Z0-9-]+)\b/gi, 'Reçu Officiel de Course - $1');
+      out = out.replace(/\bIssued on\s*(\d{2}\/\d{2}\/\d{4})/gi, 'Émis le $1');
+      out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)➔(.+)/gi, 'Course urbaine Douala : $1 ➔ $2');
+      out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)→(.+)/gi, 'Course urbaine Douala : $1 → $2');
+      out = out.replace(/\bTransport mode adjustment\s*\((.+?)\)/gi, 'Ajustement mode de transport ($1)');
     } else {
       out = out.replace(/\bCourse n°\s*(\d+)\b/gi, 'Ride #$1');
       out = out.replace(/\bCourse #(\d+)\b/gi, 'Ride #$1');
@@ -961,6 +1096,11 @@
       out = out.replace(/\bTotal des utilisateurs\s*:\s*(\d+)/gi, 'Total Users: $1');
       out = out.replace(/\bMembre depuis\s*/gi, 'Member since ');
       out = out.replace(/\bEn recherche\.\.\./gi, 'Searching...');
+      out = out.replace(/\bReçu Officiel de Course\s*-\s*([A-Z0-9-]+)\b/gi, 'Official Trip Receipt - $1');
+      out = out.replace(/\bÉmis le\s*(\d{2}\/\d{2}\/\d{4})/gi, 'Issued on $1');
+      out = out.replace(/\bCourse urbaine Douala\s*:\s*(.+?)➔(.+)/gi, 'Urban ride Douala : $1 ➔ $2');
+      out = out.replace(/\bCourse urbaine Douala\s*:\s*(.+?)→(.+)/gi, 'Urban ride Douala : $1 → $2');
+      out = out.replace(/\bAjustement mode de transport\s*\((.+?)\)/gi, 'Transport mode adjustment ($1)');
     }
     return out;
   }
