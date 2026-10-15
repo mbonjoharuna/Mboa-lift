@@ -1651,4 +1651,498 @@
   color: #ffffff;
 }
 
+/* ============================================================
+   DRIVER EARNINGS & CASHOUT SUMMARY (MTN MoMo vs ORANGE MONEY)
+   ============================================================ */
+.driver-earnings-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.earnings-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+}
+
+.earnings-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.earnings-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.earnings-period-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-period-pill {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-period-pill.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-weight: 800;
+}
+
+.earnings-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.kpi-card {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.momo-card {
+  background: #fffbeb;
+  border-color: #fef08a;
+}
+
+.orange-card {
+  background: #fff7ed;
+  border-color: #ffedd5;
+}
+
+.total-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.cashout-card {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpi-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.momo-pill {
+  background: #fde047;
+  color: #713f12;
+}
+
+.orange-pill {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.total-pill {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.balance-pill {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.kpi-share {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.kpi-val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: #0f172a;
+  margin: 8px 0 2px 0;
+}
+
+.balance-val {
+  color: #16a34a;
+  font-size: 1.35rem;
+}
+
+.kpi-sub {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.btn-cashout-action {
+  background: #16a34a;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 8px 12px;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 100%;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-cashout-action:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+/* Dual-Bar Chart Container */
+.earnings-chart-container {
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-align: left;
+}
+
+.chart-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.chart-legend-items {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.legend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.legend-color-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.momo-box {
+  background: #eab308;
+}
+
+.orange-box {
+  background: #ea580c;
+}
+
+.chart-scale-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* Chart Viewport & Bars */
+.chart-viewport {
+  position: relative;
+  min-height: 240px;
+  width: 100%;
+}
+
+.dual-bar-chart-grid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  height: 240px;
+  padding: 30px 6px 40px 6px;
+  border-bottom: 2px solid #cbd5e1;
+  position: relative;
+}
+
+.chart-column {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+
+.chart-bars-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+}
+
+.bar-col {
+  width: 44%;
+  max-width: 26px;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.bar-momo {
+  background: linear-gradient(180deg, #facc15 0%, #ca8a04 100%);
+  box-shadow: 0 3px 6px rgba(202, 138, 4, 0.25);
+}
+
+.bar-orange {
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+  box-shadow: 0 3px 6px rgba(234, 88, 12, 0.25);
+}
+
+.chart-column:hover .bar-col {
+  transform: scaleY(1.03);
+}
+
+.bar-inner-label {
+  display: none;
+}
+
+/* Tooltip */
+.chart-bar-tooltip {
+  position: absolute;
+  bottom: 85%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+  text-align: left;
+  border: 1px solid #334155;
+}
+
+.chart-column:hover .chart-bar-tooltip,
+.chart-column:focus .chart-bar-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.tooltip-header {
+  display: block;
+  font-size: 0.8rem;
+  color: #38bdf8;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 3px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.momo-row strong {
+  color: #facc15;
+}
+
+.orange-row strong {
+  color: #fb923c;
+}
+
+.tooltip-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #334155;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.chart-x-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 8px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.chart-x-total {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* Market Share Progress Track */
+.market-share-row {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e7e5e4;
+  text-align: left;
+}
+
+.share-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.share-progress-track {
+  display: flex;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.share-fill.momo-fill {
+  background: #eab308;
+  transition: width 0.4s ease;
+}
+
+.share-fill.orange-fill {
+  background: #ea580c;
+  transition: width 0.4s ease;
+}
+
+/* Operator Choice Cards in Cashout Modal */
+.operator-select-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.operator-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.operator-choice.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.cashout-balance-banner {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+}
+
+.cashout-balance-banner strong {
+  color: #16a34a;
+  font-size: 1.1rem;
+  font-family: monospace;
+}
+
+.btn-amount-pill {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.btn-amount-pill:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+
 

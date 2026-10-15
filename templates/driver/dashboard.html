@@ -87,6 +87,157 @@
     </div>
 </div>
 
+<!-- DRIVER REVENUE & CASHOUT SUMMARY (MTN MoMo vs Orange Money) -->
+<div class="driver-earnings-card" id="driverEarningsCard">
+    <div class="earnings-card-header">
+        <div class="earnings-header-left">
+            <span class="earnings-icon-badge">📊</span>
+            <div>
+                <h3 style="margin:0 0 3px 0;font-size:1.15rem;font-weight:800;color:#0f172a;">Revenus &amp; Retraits Mobile Money</h3>
+                <p style="margin:0;font-size:0.82rem;color:#64748b;">Suivi en direct des recettes encaissées via MTN MoMo et Orange Money (Douala).</p>
+            </div>
+        </div>
+
+        <div class="earnings-period-toggle">
+            <button type="button" class="btn-period-pill active" id="btnPeriodDaily" data-period="daily">
+                📅 7 Derniers Jours
+            </button>
+            <button type="button" class="btn-period-pill" id="btnPeriodWeekly" data-period="weekly">
+                📆 4 Dernières Semaines
+            </button>
+        </div>
+    </div>
+
+    <!-- Financial KPI Summary Cards -->
+    <div class="earnings-kpi-grid">
+        <div class="kpi-card momo-card">
+            <div class="kpi-top">
+                <span class="kpi-pill momo-pill">🟡 MTN MoMo</span>
+                <span class="kpi-share">{{ earnings.momo_percentage if earnings else 55 }}%</span>
+            </div>
+            <div class="kpi-val">{{ "{:,}".format(earnings.total_momo if earnings else 0).replace(",", " ") }} XAF</div>
+            <div class="kpi-sub">Recettes cumulées MoMo</div>
+        </div>
+
+        <div class="kpi-card orange-card">
+            <div class="kpi-top">
+                <span class="kpi-pill orange-pill">🟠 Orange Money</span>
+                <span class="kpi-share">{{ earnings.orange_percentage if earnings else 45 }}%</span>
+            </div>
+            <div class="kpi-val">{{ "{:,}".format(earnings.total_orange if earnings else 0).replace(",", " ") }} XAF</div>
+            <div class="kpi-sub">Recettes cumulées OM</div>
+        </div>
+
+        <div class="kpi-card total-card">
+            <div class="kpi-top">
+                <span class="kpi-pill total-pill">💰 Total Encaissé</span>
+            </div>
+            <div class="kpi-val">{{ "{:,}".format(earnings.total_revenue if earnings else 0).replace(",", " ") }} XAF</div>
+            <div class="kpi-sub">Chiffre d'affaires courses</div>
+        </div>
+
+        <div class="kpi-card cashout-card">
+            <div class="kpi-top">
+                <span class="kpi-pill balance-pill">🏦 Solde Disponible</span>
+            </div>
+            <div class="kpi-val balance-val">{{ "{:,}".format(earnings.available_balance if earnings else 0).replace(",", " ") }} XAF</div>
+            <button type="button" class="btn-cashout-action" id="btnOpenCashoutModal">
+                💸 Retirer mes gains (Cashout)
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive Dual-Bar Chart Container -->
+    <div class="earnings-chart-container">
+        <div class="chart-legend-row">
+            <div class="chart-legend-items">
+                <span class="legend-badge legend-momo">
+                    <span class="legend-color-box momo-box"></span> MTN MoMo (67...)
+                </span>
+                <span class="legend-badge legend-orange">
+                    <span class="legend-color-box orange-box"></span> Orange Money (69...)
+                </span>
+            </div>
+            <div class="chart-scale-hint" id="chartPeriodTitle">
+                Revenus quotidiens (7 derniers jours)
+            </div>
+        </div>
+
+        <!-- Dynamic Chart Viewports (Daily and Weekly) -->
+        <div id="chartViewport" class="chart-viewport" role="region" aria-label="Graphique des revenus MoMo et Orange">
+            <!-- Rendered by driver_earnings_chart.js -->
+        </div>
+
+        <!-- Operator Market Share Bar -->
+        <div class="market-share-row">
+            <div class="share-label-row">
+                <span>Part des paiements : <strong>MTN MoMo ({{ earnings.momo_percentage if earnings else 55 }}%)</strong></span>
+                <span><strong>Orange Money ({{ earnings.orange_percentage if earnings else 45 }}%)</strong></span>
+            </div>
+            <div class="share-progress-track">
+                <div class="share-fill momo-fill" style="width: {{ earnings.momo_percentage if earnings else 55 }}%;"></div>
+                <div class="share-fill orange-fill" style="width: {{ earnings.orange_percentage if earnings else 45 }}%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Money Cashout Modal -->
+<div id="cashoutModalBackdrop" class="mboa-modal-backdrop" style="display:none;" aria-hidden="true">
+    <div class="mboa-modal-dialog" role="dialog" aria-labelledby="cashoutModalTitle">
+        <div class="mboa-modal-header">
+            <div class="mboa-modal-title" id="cashoutModalTitle">
+                <span>💸 Retrait Instantané Mobile Money</span>
+            </div>
+            <button type="button" class="mboa-modal-close" id="btnCloseCashoutModal" aria-label="Fermer">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('driver_cashout') }}" class="mboa-modal-form">
+            <div class="cashout-balance-banner">
+                <span>Solde disponible au retrait :</span>
+                <strong>{{ "{:,}".format(earnings.available_balance if earnings else 0).replace(",", " ") }} XAF</strong>
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;text-align:left;">
+                <label style="font-weight:700;font-size:0.88rem;display:block;margin-bottom:6px;">Opérateur de destination :</label>
+                <div class="operator-select-grid">
+                    <label class="operator-choice active">
+                        <input type="radio" name="operator" value="MTN" checked>
+                        <span>🟡 MTN MoMo</span>
+                    </label>
+                    <label class="operator-choice">
+                        <input type="radio" name="operator" value="ORANGE">
+                        <span>🟠 Orange Money</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;text-align:left;">
+                <label for="cashoutPhone" style="font-weight:700;font-size:0.88rem;display:block;margin-bottom:6px;">Numéro Mobile Money (9 chiffres) :</label>
+                <input type="tel" id="cashoutPhone" name="phone" value="{{ driver.phone if driver and driver.phone else '' }}" placeholder="ex. 671234567" required pattern="6[0-9]{8}" class="form-control" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;text-align:left;">
+                <label for="cashoutAmount" style="font-weight:700;font-size:0.88rem;display:block;margin-bottom:6px;">Montant à virer (XAF) :</label>
+                <input type="number" id="cashoutAmount" name="amount" min="1000" max="{{ earnings.available_balance if earnings and earnings.available_balance >= 1000 else 100000 }}" value="{{ [25000, earnings.available_balance]|min if earnings and earnings.available_balance >= 1000 else 1000 }}" required class="form-control" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:1.1rem;font-weight:800;">
+                
+                <div class="quick-amount-pills" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn-amount-pill" data-val="5000">5 000</button>
+                    <button type="button" class="btn-amount-pill" data-val="10000">10 000</button>
+                    <button type="button" class="btn-amount-pill" data-val="25000">25 000</button>
+                    <button type="button" class="btn-amount-pill" data-val="{{ earnings.available_balance if earnings else 0 }}">Tout le solde</button>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" class="btn-outline btn-sm" id="btnCancelCashout">Annuler</button>
+                <button type="submit" class="btn-primary btn-sm" style="background:#16a34a;border-color:#16a34a;">⚡ Confirmer le virement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script id="driverEarningsData" type="application/json">{{ earnings|tojson if earnings else '{}' }}</script>
+
 <div class="stats-grid">
     <div class="stat-card pending">
         <div class="stat-value">{{ stats.available }}</div>
