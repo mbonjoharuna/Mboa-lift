@@ -11,15 +11,58 @@
 <div class="booking-map-grid">
     <!-- Left Column: Ride Request Form -->
     <div class="form-card" style="margin:0;">
-        <!-- Douala Traffic & Rush Hour Advisory Tip -->
-        <div class="traffic-tip">
-            <span class="traffic-tip-icon">🚦</span>
-            <div class="traffic-tip-text">
-                <strong>Conseil Trafic Douala :</strong> 
-                Aux heures de pointe sur le <strong>Pont du Wouri</strong>, <strong>Ndokoti</strong> ou <strong>Rond-Point Deido</strong>, 
-                choisissez un <strong>Bendskin 🏍️</strong> pour éviter les embouteillages !
+        <!-- Douala Rain & Traffic Alert Engine ("Météo Pluie & Inondations") -->
+        <div class="douala-weather-alert-card level-{{ douala_weather.level }}" data-weather-id="{{ douala_weather.id }}" style="margin:0 0 16px 0;">
+            <div class="weather-alert-header">
+                <div class="weather-alert-headline">
+                    <span class="weather-alert-icon">{{ douala_weather.icon }}</span>
+                    <div>
+                        <span class="weather-alert-title">{{ douala_weather.title }}</span>
+                        <span class="weather-badge">{{ douala_weather.badge }}</span>
+                    </div>
+                </div>
+                <div class="weather-recommendation-pill">
+                    🛡️ <span>{{ douala_weather.recommended_label }}</span>
+                </div>
+            </div>
+            <div class="weather-alert-body" style="padding:10px 14px;">
+                <p class="weather-advisory-text" style="margin-bottom:6px;font-size:0.87rem;">{{ douala_weather.message }}</p>
+                <div class="weather-meta-row" style="margin-top:4px;">
+                    <span style="font-size:0.78rem;"><strong>Zones d'alerte :</strong></span>
+                    <div class="weather-affected-zones">
+                        {% if douala_weather.affected_zones %}
+                            {% for z in douala_weather.affected_zones %}
+                                <span class="zone-hazard-tag">⚠️ {{ z }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color:#059669;font-size:0.78rem;font-weight:600;">✓ Aucune inondation</span>
+                        {% endif %}
+                    </div>
+                    <span style="margin-left:auto;font-size:0.78rem;color:#64748b;">
+                        🌉 {{ douala_weather.bridge_status }}
+                    </span>
+                </div>
+            </div>
+            <!-- Live Switcher Pills for Instant Testing -->
+            <div class="weather-switcher-bar" style="padding:8px 14px;">
+                <span class="weather-switcher-label">⚡ Météo :</span>
+                <button type="button" class="weather-switch-btn {% if douala_weather.id == 'torrential_rain' %}active{% endif %}" data-condition="torrential_rain">
+                    🌧️ Pluie &amp; Inondations
+                </button>
+                <button type="button" class="weather-switch-btn {% if douala_weather.id == 'wouri_jam' %}active{% endif %}" data-condition="wouri_jam">
+                    🌉 Bouchon Wouri
+                </button>
+                <button type="button" class="weather-switch-btn {% if douala_weather.id == 'moderate_rain' %}active{% endif %}" data-condition="moderate_rain">
+                    🌦️ Averse
+                </button>
+                <button type="button" class="weather-switch-btn {% if douala_weather.id == 'clear_traffic' %}active{% endif %}" data-condition="clear_traffic">
+                    ☀️ Dégagé
+                </button>
             </div>
         </div>
+
+        <!-- Dynamic Route Hazard Callout (triggers on typing flooded/blocked zones) -->
+        <div id="routeHazardCallout" class="route-hazard-callout" style="display:none;"></div>
 
         <form method="POST" action="{{ url_for('request_ride') }}" id="rideForm" novalidate>
             <!-- Vehicle Type Picker (Bendskin Moto vs Taxi Jaune vs Confort) -->
@@ -138,6 +181,16 @@
                 Commander la course
             </button>
         </form>
+
+        <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;text-align:left;">
+            <div>
+                <strong style="font-size:0.86rem;color:#0f172a;display:block;">📶 Pas de connexion internet ?</strong>
+                <small style="color:#64748b;">Réservez gratuitement sans données mobiles via USSD (*999#) ou SMS.</small>
+            </div>
+            <button type="button" class="btn-open-ussd" style="padding:6px 14px;font-size:0.78rem;">
+                📱 Réserver par USSD (*999#)
+            </button>
+        </div>
     </div>
 
     <!-- Right Column: Interactive Douala Route Map -->

@@ -103,6 +103,9 @@
            target="_blank" class="btn-safety btn-sm" title="Partager ce trajet pour votre sécurité">
             🛡️ Partager ma sécurité WhatsApp
         </a>
+        <button type="button" class="btn-safety btn-sm" id="activeRideSosBtn" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;" title="Centre d'Urgence SOS (Police 117, SAMU 119)">
+            🆘 SOS Urgence (117 / 113)
+        </button>
         {% if not active_ride.is_paid %}
             <a href="{{ url_for('payment', ride_id=active_ride.id) }}" class="btn-primary btn-sm btn-pay-action">
                 💳 Payer par MoMo / OM

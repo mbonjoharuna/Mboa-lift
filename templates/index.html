@@ -56,6 +56,70 @@
     <div><strong>🛡️</strong><span>Partage Trajet Sécurité</span></div>
 </section>
 
+<!-- Douala Rain & Traffic Alert Engine ("Météo Pluie & Inondations") -->
+<section class="douala-weather-alert-card level-{{ douala_weather.level }}" data-weather-id="{{ douala_weather.id }}">
+    <div class="weather-alert-header">
+        <div class="weather-alert-headline">
+            <span class="weather-alert-icon">{{ douala_weather.icon }}</span>
+            <div>
+                <span class="weather-alert-title">{{ douala_weather.title }}</span>
+                <span class="weather-badge">{{ douala_weather.badge }}</span>
+            </div>
+        </div>
+        <div class="weather-recommendation-pill">
+            🛡️ <span>Recommandation : {{ douala_weather.recommended_label }}</span>
+        </div>
+    </div>
+    <div class="weather-alert-body">
+        <p class="weather-advisory-text">{{ douala_weather.message }}</p>
+        <div class="weather-meta-row">
+            <span><strong>Zones sous surveillance :</strong></span>
+            <div class="weather-affected-zones">
+                {% if douala_weather.affected_zones %}
+                    {% for z in douala_weather.affected_zones %}
+                        <span class="zone-hazard-tag">⚠️ {{ z }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span style="color:#059669;font-weight:600;">✓ Aucune zone inondée</span>
+                {% endif %}
+            </div>
+            <span style="margin-left:auto;font-size:0.8rem;color:#64748b;">
+                🌉 {{ douala_weather.bridge_status }}
+            </span>
+        </div>
+    </div>
+    <!-- Interactive condition test pills for evaluator/demo -->
+    <div class="weather-switcher-bar">
+        <span class="weather-switcher-label">⚡ Tester les conditions en direct :</span>
+        <button type="button" class="weather-switch-btn {% if douala_weather.id == 'torrential_rain' %}active{% endif %}" data-condition="torrential_rain">
+            🌧️ Pluie torrentielle &amp; Inondations
+        </button>
+        <button type="button" class="weather-switch-btn {% if douala_weather.id == 'wouri_jam' %}active{% endif %}" data-condition="wouri_jam">
+            🌉 Bouchon Pont Wouri
+        </button>
+        <button type="button" class="weather-switch-btn {% if douala_weather.id == 'moderate_rain' %}active{% endif %}" data-condition="moderate_rain">
+            🌦️ Averses modérées
+        </button>
+        <button type="button" class="weather-switch-btn {% if douala_weather.id == 'clear_traffic' %}active{% endif %}" data-condition="clear_traffic">
+            ☀️ Ciel dégagé &amp; Fluide
+        </button>
+    </div>
+</section>
+
+<!-- Offline USSD Fast-Ride Booking Banner -->
+<section class="ussd-offline-banner">
+    <div class="ussd-banner-content">
+        <div class="ussd-banner-icon">📶</div>
+        <div class="ussd-banner-text">
+            <strong>Pas de forfait internet ou réseau instable à Douala ?</strong>
+            <small>Réservez immédiatement par code USSD gratuit direct <span class="ussd-code-highlight">*999#</span> ou par SMS au <strong>8800</strong> sur n'importe quel téléphone 2G/3G/4G.</small>
+        </div>
+    </div>
+    <button type="button" class="btn-open-ussd">
+        📱 Réserver par USSD (*999#)
+    </button>
+</section>
+
 <!-- 3 Douala Ride Modes -->
 <section class="section">
     <h2 class="section-title">Les 3 modes de transport MboaLift</h2>

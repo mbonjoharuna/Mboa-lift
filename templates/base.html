@@ -51,6 +51,9 @@
                     <a href="{{ url_for('admin_login') }}" class="{% if request.endpoint == 'admin_login' %}active{% endif %}">Admin</a>
                 {% endif %}
             </nav>
+            <button type="button" class="header-sos-btn" id="headerSosBtn" aria-label="SOS Urgence Douala" title="Police Secours 117, Gendarmerie 113, SAMU 119">
+                🆘 <span class="sos-text">SOS Urgence</span>
+            </button>
             <div class="language-switcher" aria-label="Language selection">
                 <label for="languageSwitcher" class="sr-only">Language</label>
                 <select id="languageSwitcher" title="Language" aria-label="Language selection">
@@ -113,12 +116,177 @@
         </div>
     </div>
 
+    <!-- Floating SOS Urgence Button (accessible on all pages) -->
+    <button type="button" class="floating-sos-btn" id="floatingSosBtn" aria-label="Bouton Sécurité Urgence Douala" title="Centre d'Urgence SOS (Police 117, SAMU 119)">
+        🆘
+    </button>
+
+    <!-- Emergency SOS Safety Center Modal -->
+    <div id="mboaSosModal" class="mboa-modal-backdrop" aria-hidden="true" role="dialog" aria-labelledby="sosModalTitle">
+        <div class="mboa-modal-dialog">
+            <div class="sos-modal-header">
+                <div>
+                    <h3 id="sosModalTitle">🆘 Centre d'Urgence &amp; Sécurité Douala</h3>
+                    <p>Accès direct aux numéros d'urgence officiels du Cameroun &amp; alerte de détresse géolocalisée.</p>
+                </div>
+                <button type="button" class="mboa-modal-close" id="mboaSosClose" aria-label="Fermer">×</button>
+            </div>
+            <div class="sos-modal-body">
+                <!-- Cameroon Hotlines Grid -->
+                <div class="emergency-hotlines-grid">
+                    {% for contact in emergency_contacts %}
+                    <a href="{{ contact.direct_tel }}" class="hotline-card" title="Appeler {{ contact.name_fr }}">
+                        <div class="hotline-info">
+                            <span class="hotline-name">{{ contact.icon }} {{ contact.name_fr }}</span>
+                            <span class="hotline-desc">{{ contact.desc_fr }}</span>
+                        </div>
+                        <div class="hotline-action">
+                            <span class="hotline-number">{{ contact.number }}</span>
+                            <span class="hotline-pill">📞 {{ contact.badge }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Instant Distress Location Broadcast -->
+                <div class="distress-broadcast-card">
+                    <div class="distress-card-title">
+                        <span>📡 Diffusion d'Urgence Immédiate (GPS Douala)</span>
+                    </div>
+                    <div class="distress-location-display" id="sosLocationCoords">
+                        📍 <em>Localisation en cours...</em>
+                    </div>
+                    <div class="distress-text-preview" id="sosTextPreview">
+                        🚨 ALERTE URGENCE MboaLift Douala ! J'ai besoin d'une assistance immédiate. Position : Douala. Merci d'intervenir au plus vite !
+                    </div>
+                    <div class="distress-actions-row">
+                        <a href="#" target="_blank" class="btn-sos-wa" id="sosWaLink">
+                            💬 SOS WhatsApp
+                        </a>
+                        <a href="sms:117" class="btn-sos-sms" id="sosSmsLink">
+                            📱 SOS SMS (117)
+                        </a>
+                        <button type="button" class="btn-sos-copy" id="sosCopyBtn">
+                            📋 Copier le message
+                        </button>
+                        <button type="button" class="btn-strobe-toggle" id="sosStrobeBtn">
+                            🚨 Balise Visuelle Flash
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS Nighttime Strobe Beacon Fullscreen Overlay -->
+    <div id="sosStrobeOverlay" class="sos-strobe-overlay">
+        <span>🚨 SOS URGENCE 🚨</span>
+        <span style="font-size:1rem;margin-top:10px;background:rgba(0,0,0,0.7);padding:6px 14px;border-radius:999px;">
+            Touchez l'écran pour arrêter la balise
+        </span>
+    </div>
+
+    <!-- Offline USSD Fast-Ride Booking Modal -->
+    <div id="ussdBookingModal" class="mboa-modal-backdrop" aria-hidden="true" role="dialog" aria-labelledby="ussdModalTitle">
+        <div class="mboa-modal-dialog">
+            <div class="ussd-modal-header">
+                <div>
+                    <h3 id="ussdModalTitle">📶 Réservation sans Internet (USSD &amp; SMS)</h3>
+                    <p>Pas de connexion données mobiles ? Composez le code direct ou envoyez un SMS gratuit.</p>
+                </div>
+                <button type="button" class="mboa-modal-close" id="ussdModalClose" aria-label="Fermer">×</button>
+            </div>
+            <div class="ussd-modal-body">
+                <div class="ussd-form-grid">
+                    <div class="ussd-form-group">
+                        <label for="ussdPickup">Lieu de départ (Douala)</label>
+                        <select id="ussdPickup">
+                            <option value="Akwa" selected>1. Akwa</option>
+                            <option value="Bonanjo">2. Bonanjo</option>
+                            <option value="Bonamoussadi">3. Bonamoussadi</option>
+                            <option value="Deido">4. Deido</option>
+                            <option value="Bépanda">5. Bépanda</option>
+                            <option value="Makepe">6. Makepe</option>
+                            <option value="Bonapriso">7. Bonapriso</option>
+                            <option value="Bali">8. Bali</option>
+                            <option value="New Bell">9. New Bell</option>
+                            <option value="Ndokoti">10. Ndokoti</option>
+                            <option value="Logbessou">11. Logbessou</option>
+                            <option value="Bonabéri">12. Bonabéri</option>
+                            <option value="Aéroport">13. Aéroport</option>
+                            <option value="Japoma">14. Japoma</option>
+                            <option value="Cité des Palmiers">15. Cité des Palmiers</option>
+                        </select>
+                    </div>
+
+                    <div class="ussd-form-group">
+                        <label for="ussdDestination">Destination (Douala)</label>
+                        <select id="ussdDestination">
+                            <option value="Akwa">1. Akwa</option>
+                            <option value="Bonanjo" selected>2. Bonanjo</option>
+                            <option value="Bonamoussadi">3. Bonamoussadi</option>
+                            <option value="Deido">4. Deido</option>
+                            <option value="Bépanda">5. Bépanda</option>
+                            <option value="Makepe">6. Makepe</option>
+                            <option value="Bonapriso">7. Bonapriso</option>
+                            <option value="Bali">8. Bali</option>
+                            <option value="New Bell">9. New Bell</option>
+                            <option value="Ndokoti">10. Ndokoti</option>
+                            <option value="Logbessou">11. Logbessou</option>
+                            <option value="Bonabéri">12. Bonabéri</option>
+                            <option value="Aéroport">13. Aéroport</option>
+                            <option value="Japoma">14. Japoma</option>
+                            <option value="Cité des Palmiers">15. Cité des Palmiers</option>
+                        </select>
+                    </div>
+
+                    <div class="ussd-form-group" style="grid-column: 1 / -1;">
+                        <label for="ussdVehicle">Mode de transport</label>
+                        <select id="ussdVehicle">
+                            <option value="bendskin">1. Bendskin (Moto-Taxi 🏍️) — Éco (-30%)</option>
+                            <option value="taxi" selected>2. Taxi Jaune (Standard 🚕) — Populaire</option>
+                            <option value="comfort">3. Voiture Confort (VIP Privé 🚗) — Climatisé</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Retro USSD Terminal Code Display -->
+                <div class="ussd-terminal-box">
+                    <div class="ussd-terminal-label">Code USSD Direct à composer (sans internet) :</div>
+                    <div class="ussd-terminal-code">
+                        <span id="ussdCodeDisplay">*999*1*2*2#</span>
+                        <span style="font-size:0.8rem;color:#94a3b8;font-weight:normal;">Gratuit 2G/3G/4G</span>
+                    </div>
+                    <div class="ussd-sms-format" id="ussdSmsFormat">
+                        Ou envoyez par SMS au <strong>8800</strong> : <code>MBOA AKWA BONANJO TAXI</code>
+                    </div>
+                </div>
+
+                <div class="ussd-actions-grid">
+                    <a href="tel:%2A999%2A1%2A2%2A2%23" class="btn-ussd-dial" id="ussdDialBtn">
+                        📞 Composer le code USSD
+                    </a>
+                    <a href="sms:8800?body=MBOA%20AKWA%20BONANJO%20TAXI" class="btn-ussd-sms" id="ussdSmsBtn">
+                        ✉️ Envoyer par SMS gratuit
+                    </a>
+                    <button type="button" class="btn-ussd-sim" id="ussdSimulateBtn">
+                        📱 Simuler l'écran USSD (Téléphone 2G)
+                    </button>
+                </div>
+
+                <!-- Nokia Style Feature Phone Prompt Display -->
+                <div id="nokiaUssdScreen" class="nokia-ussd-screen"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(() => {}));</script>
     <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='js/douala_map.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ride_tracker.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/douala_weather_sos.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

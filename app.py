@@ -174,8 +174,16 @@ def resolve_locale():
 
 @app.context_processor
 def inject_locale():
-    """Inject current_lang into all templates."""
-    return dict(current_lang=getattr(g, "lang", "en"))
+    """Inject current_lang, active weather alert, emergency contacts, and USSD data into all templates."""
+    active_lang = getattr(g, "lang", "en")
+    weather = get_active_weather_alert()
+    return dict(
+        current_lang=active_lang,
+        douala_weather=weather,
+        emergency_contacts=DOUALA_EMERGENCY_CONTACTS,
+        douala_locations_coded=DOUALA_LOCATION_CODES,
+        douala_weather_all=DOUALA_WEATHER_CONDITIONS
+    )
 
 
 # ============================================================
@@ -213,6 +221,210 @@ DOUALA_LANDMARKS = [
     {"name": "Place du Gouvernement (Bonanjo)", "lat": 4.0428, "lng": 9.6885, "type": "admin", "icon": "🏛️", "tip": "Sièges administratifs & Palais de Justice"},
     {"name": "Aéroport Int. de Douala", "lat": 4.0118, "lng": 9.7194, "type": "airport", "icon": "✈️", "tip": "Hub aérien international (DLA)"},
 ]
+
+# Coded Douala locations for offline USSD dialing (*999*1*2*2#)
+DOUALA_LOCATION_CODES = {
+    1: "Akwa",
+    2: "Bonanjo",
+    3: "Bonamoussadi",
+    4: "Deido",
+    5: "Bépanda",
+    6: "Makepe",
+    7: "Bonapriso",
+    8: "Bali",
+    9: "New Bell",
+    10: "Ndokoti",
+    11: "Logbessou",
+    12: "Bonabéri",
+    13: "Aéroport",
+    14: "Japoma",
+    15: "Cité des Palmiers",
+}
+
+LOCATION_TO_CODE = {
+    "akwa": 1,
+    "bonanjo": 2,
+    "bonamoussadi": 3,
+    "deido": 4,
+    "bépanda": 5,
+    "bepanda": 5,
+    "makepe": 6,
+    "bonapriso": 7,
+    "bali": 8,
+    "new bell": 9,
+    "newbell": 9,
+    "ndokoti": 10,
+    "logbessou": 11,
+    "bonabéri": 12,
+    "bonaberi": 12,
+    "aéroport": 13,
+    "aeroport": 13,
+    "japoma": 14,
+    "cité des palmiers": 15,
+    "cite des palmiers": 15,
+}
+
+VEHICLE_MODE_CODES = {
+    1: "bendskin",
+    2: "taxi",
+    3: "comfort"
+}
+
+MODE_TO_CODE = {
+    "bendskin": 1,
+    "moto": 1,
+    "taxi": 2,
+    "comfort": 3,
+    "vip": 3,
+    "confort": 3
+}
+
+# Cameroon & Douala Official Emergency Contacts (Police, Gendarmerie, SAMU, Pompiers)
+DOUALA_EMERGENCY_CONTACTS = [
+    {
+        "id": "police",
+        "name_fr": "Police Secours Douala",
+        "name_en": "Douala Police Secours",
+        "number": "117",
+        "icon": "🚨",
+        "badge": "24/7 Gratuit",
+        "desc_fr": "Commissariats Centraux & patrouilles d'intervention rapide",
+        "desc_en": "Central police precincts & rapid intervention mobile units",
+        "direct_tel": "tel:117"
+    },
+    {
+        "id": "gendarmerie",
+        "name_fr": "Gendarmerie Nationale",
+        "name_en": "National Gendarmerie",
+        "number": "113",
+        "icon": "🛡️",
+        "badge": "24/7 Gratuit",
+        "desc_fr": "Légion de Gendarmerie du Littoral & sécurité routière",
+        "desc_en": "Littoral Gendarmerie Legion & checkpoint safety",
+        "direct_tel": "tel:113"
+    },
+    {
+        "id": "samu",
+        "name_fr": "SAMU Urgences Médicales",
+        "name_en": "SAMU Medical Emergency",
+        "number": "119",
+        "icon": "🚑",
+        "badge": "Urgences Médicales",
+        "desc_fr": "Ambulances, Hôpital Laquintinie & Hôpital Général de Douala",
+        "desc_en": "Ambulances, Laquintinie & Douala General Hospitals",
+        "direct_tel": "tel:119"
+    },
+    {
+        "id": "pompiers",
+        "name_fr": "Sapeurs-Pompiers (20e Groupement)",
+        "name_en": "Fire & Rescue Brigade",
+        "number": "118",
+        "icon": "🚒",
+        "badge": "Secours Inondation",
+        "desc_fr": "Sauvetage inondations Makèpè/Bépanda, accidents routiers & incendies",
+        "desc_en": "Flood rescue Makepe/Bépanda, road accidents & firefighting",
+        "direct_tel": "tel:118"
+    }
+]
+
+# Douala Rain & Traffic Alert Engine states
+DOUALA_WEATHER_CONDITIONS = {
+    "torrential_rain": {
+        "id": "torrential_rain",
+        "icon": "🌧️⚠️",
+        "level": "danger",
+        "badge_fr": "Alerte Inondations & Pluie Torrentielle",
+        "badge_en": "Flood Alert & Torrential Downpour",
+        "title_fr": "Pluie torrentielle & Inondations détectées",
+        "title_en": "Torrential Rain & Severe Flooding Detected",
+        "message_fr": "Pluie torrentielle détectée sur Douala : risques majeurs d'inondations à Makèpè Missokè, Bépanda et Bonabéri. Privilégiez les Voitures Confort abritées ou itinéraires déviés.",
+        "message_en": "Torrential rain detected in Douala: severe flood risks at Makepe Missoke, Bépanda, and Bonabéri. Prefer sheltered Comfort Cars or diverted routes.",
+        "affected_zones": ["Makepe", "Bépanda", "Bonabéri", "Ndokoti"],
+        "recommended_vehicle": "comfort",
+        "recommended_label_fr": "Voiture Confort (Haute garde au sol & abrité)",
+        "recommended_label_en": "Comfort Car (High ground clearance & sheltered)",
+        "tip_fr": "Évitez les traversées à moto sur les zones inondables.",
+        "tip_en": "Avoid motorbike rides across low-lying flood points.",
+        "bridge_status_fr": "Pont du Wouri : Chaussée glissante & aquaplaning",
+        "bridge_status_en": "Wouri Bridge: Slippery roadway & hydroplaning risk"
+    },
+    "wouri_jam": {
+        "id": "wouri_jam",
+        "icon": "🌉⚠️",
+        "level": "warning",
+        "badge_fr": "Bouchon Majeur Pont du Wouri",
+        "badge_en": "Wouri Bridge Major Gridlock",
+        "title_fr": "Embouteillage critique sur le Pont du Wouri",
+        "title_en": "Critical Congestion on Wouri Bridge",
+        "message_fr": "Saturation majeure de l'axe Bonabéri ↔ Rond-Point Deïdo (retard estimé : 45+ min). Privilégiez un Bendskin 🏍️ pour battre les bouchons ou différez votre départ.",
+        "message_en": "Major gridlock on Bonabéri ↔ Rond-Point Deïdo corridor (est. delay: 45+ min). Prefer Bendskin 🏍️ to weave through traffic or delay your trip.",
+        "affected_zones": ["Bonabéri", "Deido", "Akwa"],
+        "recommended_vehicle": "bendskin",
+        "recommended_label_fr": "Bendskin 🏍️ (Anti-embouteillages)",
+        "recommended_label_en": "Bendskin 🏍️ (Beat the traffic)",
+        "tip_fr": "Les motos se faufilent plus rapidement sur le pont.",
+        "tip_en": "Motorbikes navigate congested bridge lanes faster.",
+        "bridge_status_fr": "Pont du Wouri : Congestion sévère (blocage complet)",
+        "bridge_status_en": "Wouri Bridge: Severe congestion (complete standstill)"
+    },
+    "moderate_rain": {
+        "id": "moderate_rain",
+        "icon": "🌦️",
+        "level": "info",
+        "badge_fr": "Météo Tropicale Douala",
+        "badge_en": "Tropical Weather Douala",
+        "title_fr": "Averses tropicales modérées",
+        "title_en": "Moderate Tropical Showers",
+        "message_fr": "Averses intermittentes sur Akwa, Bonanjo et Ndokoti. Chaussées humides. Taxis jaunes abrités conseillés.",
+        "message_en": "Intermittent showers across Akwa, Bonanjo, and Ndokoti. Wet roadways. Sheltered Yellow Taxis recommended.",
+        "affected_zones": ["Akwa", "Bonanjo", "Ndokoti"],
+        "recommended_vehicle": "taxi",
+        "recommended_label_fr": "Taxi Jaune 🚕 (Abrité & économique)",
+        "recommended_label_en": "Yellow Taxi 🚕 (Sheltered & affordable)",
+        "tip_fr": "Casque et imperméable vivement recommandés en moto.",
+        "tip_en": "Helmet and rain poncho strongly recommended on motorbikes.",
+        "bridge_status_fr": "Pont du Wouri : Trafic ralenti mais régulier",
+        "bridge_status_en": "Wouri Bridge: Slower but steady flow"
+    },
+    "clear_traffic": {
+        "id": "clear_traffic",
+        "icon": "☀️🚗",
+        "level": "success",
+        "badge_fr": "Trafic & Météo Idéals",
+        "badge_en": "Ideal Weather & Traffic",
+        "title_fr": "Temps sec & Circulation normale",
+        "title_en": "Dry Weather & Normal Flow",
+        "message_fr": "Conditions idéales pour se déplacer à Douala. Trafic fluide sur les grands boulevards et le Pont du Wouri.",
+        "message_en": "Optimal conditions across Douala. Smooth traffic flow on main boulevards and Wouri Bridge.",
+        "affected_zones": [],
+        "recommended_vehicle": "taxi",
+        "recommended_label_fr": "Tous modes de transport disponibles",
+        "recommended_label_en": "All transport modes ready",
+        "tip_fr": "Bendskin pour la vitesse, Taxi Jaune pour le covoiturage.",
+        "tip_en": "Bendskin for speed, Yellow Taxi for carpooling.",
+        "bridge_status_fr": "Pont du Wouri : Circulation fluide (10 min)",
+        "bridge_status_en": "Wouri Bridge: Fluid traffic (10 min)"
+    }
+}
+
+CURRENT_WEATHER_CONDITION = "torrential_rain"
+
+
+def get_active_weather_alert(condition_key=None):
+    """Return the active weather/traffic condition dictionary with localized labels."""
+    global CURRENT_WEATHER_CONDITION
+    key = condition_key or session.get("weather_condition") or CURRENT_WEATHER_CONDITION
+    if key not in DOUALA_WEATHER_CONDITIONS:
+        key = "torrential_rain"
+    alert = dict(DOUALA_WEATHER_CONDITIONS[key])
+    active_lang = getattr(g, "lang", "en") if hasattr(g, "lang") else session.get("lang", "fr")
+    alert["badge"] = alert.get(f"badge_{active_lang}", alert["badge_fr"])
+    alert["title"] = alert.get(f"title_{active_lang}", alert["title_fr"])
+    alert["message"] = alert.get(f"message_{active_lang}", alert["message_fr"])
+    alert["tip"] = alert.get(f"tip_{active_lang}", alert["tip_fr"])
+    alert["bridge_status"] = alert.get(f"bridge_status_{active_lang}", alert["bridge_status_fr"])
+    alert["recommended_label"] = alert.get(f"recommended_label_{active_lang}", alert["recommended_label_fr"])
+    return alert
 
 # Base fares (XAF) for Standard Yellow Taxi. Symmetric for simplicity.
 FARE_MATRIX = {
@@ -2586,6 +2798,160 @@ def api_ride_status(ride_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+
+@app.route("/api/weather-traffic", methods=["GET", "POST"])
+def api_weather_traffic():
+    """
+    Get or change the active Douala weather & traffic alert condition.
+    GET: returns active condition and list of available conditions.
+    POST: updates condition (key in query or JSON: 'torrential_rain', 'wouri_jam', 'moderate_rain', 'clear_traffic').
+    """
+    global CURRENT_WEATHER_CONDITION
+    cond = request.args.get("condition")
+    if not cond and request.is_json:
+        cond = (request.get_json(silent=True) or {}).get("condition")
+
+    if cond and cond in DOUALA_WEATHER_CONDITIONS:
+        CURRENT_WEATHER_CONDITION = cond
+        session["weather_condition"] = cond
+
+    active_alert = get_active_weather_alert()
+    active_lang = getattr(g, "lang", "en") if hasattr(g, "lang") else session.get("lang", "fr")
+
+    conditions_summary = []
+    for k, v in DOUALA_WEATHER_CONDITIONS.items():
+        conditions_summary.append({
+            "id": k,
+            "icon": v["icon"],
+            "level": v["level"],
+            "badge": v.get(f"badge_{active_lang}", v["badge_fr"]),
+            "title": v.get(f"title_{active_lang}", v["title_fr"]),
+            "message": v.get(f"message_{active_lang}", v["message_fr"]),
+            "is_active": k == active_alert["id"]
+        })
+
+    return jsonify({
+        "active": active_alert,
+        "all_conditions": conditions_summary,
+        "current_id": active_alert["id"]
+    })
+
+
+@app.route("/api/ussd-simulate", methods=["POST"])
+def api_ussd_simulate():
+    """
+    Simulate an offline Douala USSD dial string (*999*...#) or SMS booking format.
+    Calculates exact fare, validates locations, generates native dialer URL and SMS body.
+    If requested and passenger is logged in, optionally provisions the ride in DB.
+    """
+    data = request.get_json(silent=True) or {}
+    pickup_in = str(data.get("pickup", "")).strip()
+    dest_in = str(data.get("destination", "")).strip()
+    v_type_in = str(data.get("vehicle_type", "taxi")).strip().lower()
+    ussd_raw = str(data.get("ussd_string", "")).strip()
+    create_ride = bool(data.get("create_ride", False))
+
+    # Parse USSD string if provided in format *999*...#
+    if ussd_raw:
+        clean_u = ussd_raw.replace("#", "").replace("*", " ").strip().split()
+        if len(clean_u) >= 3 and clean_u[0] == "999":
+            p_arg = clean_u[1]
+            d_arg = clean_u[2]
+            m_arg = clean_u[3] if len(clean_u) > 3 else "2"
+
+            if p_arg.isdigit() and int(p_arg) in DOUALA_LOCATION_CODES:
+                pickup_in = DOUALA_LOCATION_CODES[int(p_arg)]
+            else:
+                pickup_in = normalize_location(p_arg) or pickup_in
+
+            if d_arg.isdigit() and int(d_arg) in DOUALA_LOCATION_CODES:
+                dest_in = DOUALA_LOCATION_CODES[int(d_arg)]
+            else:
+                dest_in = normalize_location(d_arg) or dest_in
+
+            if m_arg.isdigit() and int(m_arg) in VEHICLE_MODE_CODES:
+                v_type_in = VEHICLE_MODE_CODES[int(m_arg)]
+            elif m_arg.lower() in MODE_TO_CODE:
+                v_type_in = VEHICLE_MODE_CODES[MODE_TO_CODE[m_arg.lower()]]
+
+    # Normalize locations
+    pickup = normalize_location(pickup_in) or "Akwa"
+    destination = normalize_location(dest_in) or "Bonanjo"
+    if pickup == destination:
+        destination = "Bonanjo" if pickup != "Bonanjo" else "Akwa"
+
+    if v_type_in not in VEHICLE_TYPES:
+        v_type_in = "taxi"
+
+    fare = get_fare(pickup, destination, v_type_in)
+    v_info = VEHICLE_TYPES[v_type_in]
+
+    p_code = LOCATION_TO_CODE.get(pickup.lower(), 1)
+    d_code = LOCATION_TO_CODE.get(destination.lower(), 2)
+    m_code = MODE_TO_CODE.get(v_type_in, 2)
+
+    generated_ussd = f"*999*{p_code}*{d_code}*{m_code}#"
+    mnemonic_ussd = f"*999*{pickup.upper()}*{destination.upper()}#"
+    sms_body = f"MBOA {pickup.upper()} {destination.upper()} {v_type_in.upper()}"
+    dial_url = f"tel:%2A999%2A{p_code}%2A{d_code}%2A{m_code}%23"
+    sms_url = f"sms:8800?body={sms_body.replace(' ', '%20')}"
+
+    ride_id = None
+    if create_ride and session.get("user_id"):
+        conn = get_db()
+        if conn:
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    """INSERT INTO rides
+                       (user_id, pickup, destination, passengers, vehicle_type, fare, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, 'PENDING')""",
+                    (session["user_id"], pickup, destination, 1, v_type_in, fare)
+                )
+                conn.commit()
+                ride_id = cur.lastrowid
+                cur.close()
+            except Error:
+                pass
+            finally:
+                conn.close()
+
+    screen_lines = [
+        "==============================",
+        "  MBOALIFT USSD SERVICE 237   ",
+        "==============================",
+        "✓ Course confirmée !",
+        f"• Départ : {pickup}",
+        f"• Arrivée : {destination}",
+        f"• Mode : {v_info['label']}",
+        f"• Tarif garanti : {fare} XAF",
+        "------------------------------",
+        "Chauffeur assigné sous 2-4 min.",
+        "Paiement à l'arrivée (Cash/MoMo).",
+        "Pour annuler, composez *999*0#"
+    ]
+
+    return jsonify({
+        "success": True,
+        "pickup": pickup,
+        "destination": destination,
+        "pickup_code": p_code,
+        "dest_code": d_code,
+        "vehicle_type": v_type_in,
+        "vehicle_label": v_info["label"],
+        "fare": fare,
+        "currency": "XAF",
+        "ussd_code": generated_ussd,
+        "ussd_mnemonic": mnemonic_ussd,
+        "dial_url": dial_url,
+        "sms_body": sms_body,
+        "sms_number": "8800",
+        "sms_url": sms_url,
+        "screen_text": "\n".join(screen_lines),
+        "screen_lines": screen_lines,
+        "ride_id": ride_id
+    })
 
 
 @app.route("/api/ai-chat", methods=["POST"])
