@@ -8,6 +8,28 @@
     <p>Acceptez une course en attente à Douala. Dès que vous acceptez, la course vous est exclusivement assignée.</p>
 </div>
 
+<!-- Driver Voice Announcement Engine (Web Speech API) -->
+<div class="driver-voice-card" id="driverVoiceCard">
+    <div class="voice-card-header">
+        <div class="voice-card-info">
+            <span class="voice-radar-icon">📢</span>
+            <div>
+                <strong>Annonces Vocales Chauffeur (Bendskin &amp; Taxis)</strong>
+                <p>Ne quittez pas la route des yeux : vos courses en direct sont lues à voix haute.</p>
+            </div>
+        </div>
+        <div class="voice-card-controls">
+            <button type="button" class="btn-voice-toggle voice-active" id="btnToggleVoice" aria-pressed="true">
+                <span class="voice-status-dot dot-active"></span>
+                <span class="voice-toggle-text" data-text-on="🔊 Voix Active" data-text-off="🔇 Voix Coupée">🔊 Voix Active</span>
+            </button>
+            <button type="button" class="btn-voice-test" id="btnTestVoice" title="Tester le haut-parleur">
+                ⚡ Tester la voix
+            </button>
+        </div>
+    </div>
+</div>
+
 {% if rides %}
 <div class="table-responsive">
     <table class="data-table">

@@ -552,6 +552,19 @@
       'Invalid or Not Found Receipt': 'Reçu Non Valide ou Introuvable',
       'Back to home': 'Retour à l\'accueil',
       'MboaLift Home': 'Accueil MboaLift',
+
+      // Driver Voice Announcements
+      'Driver Voice Announcements (Bendskin & Taxis)': 'Annonces Vocales Chauffeur (Bendskin & Taxis)',
+      'Keep your eyes on the road: incoming rides are announced out loud.': 'Ne quittez pas la route des yeux : vos courses en direct sont lues à voix haute.',
+      'Voice Alerts ON': 'Voix Active',
+      'Voice Alerts OFF': 'Voix Coupée',
+      'Test voice': 'Tester la voix',
+      'Test speaker': 'Tester le haut-parleur',
+      'Voice Alert ON': 'Annonce Vocale ON',
+      'Voice Alert OFF': 'Annonce Vocale OFF',
+      'New ride detected!': 'Nouvelle course détectée !',
+      'Accept': 'Accepter',
+      'MboaLift Passenger': 'Passager MboaLift',
     },
 
     // French -> English (allows flawless switching back to English on French templates!)
@@ -1033,6 +1046,25 @@
       'Retour à l\'accueil': 'Back to home',
       'Accueil MboaLift': 'MboaLift Home',
       'Ce reçu dématérialisé est émis conformément aux dispositions légales régissant le transport urbain et la facturation électronique au Cameroun. Il vaut justificatif de dépense professionnelle auprès des services comptables et fiscaux d\'entreprise. Pour toute réclamation, contactez le service d\'assistance MboaLift Douala : support@mboalift.cm / (+237) 233 42 04 04.': 'This electronic receipt is issued in compliance with legal regulations governing urban transport and electronic invoicing in Cameroon. It serves as official proof of business travel expenses for corporate accounting and tax filing. For inquiries, contact MboaLift Douala support: support@mboalift.cm / (+237) 233 42 04 04.',
+
+      // Driver Voice Announcements
+      'Annonces Vocales Chauffeur (Bendskin & Taxis)': 'Driver Voice Announcements (Bendskin & Taxis)',
+      'Annonces Vocales Chauffeur (Bendskin &amp; Taxis)': 'Driver Voice Announcements (Bendskin & Taxis)',
+      'Ne quittez pas la route des yeux : vos courses en direct sont lues à voix haute.': 'Keep your eyes on the road: incoming rides are announced out loud.',
+      '🔊 Voix Active': '🔊 Voice Alerts ON',
+      'Voix Active': 'Voice Alerts ON',
+      '🔇 Voix Coupée': '🔇 Voice Alerts OFF',
+      'Voix Coupée': 'Voice Alerts OFF',
+      '⚡ Tester la voix': '⚡ Test voice',
+      'Tester la voix': 'Test voice',
+      'Tester le haut-parleur': 'Test speaker',
+      '🔊 Annonce Vocale ON': '🔊 Voice Alert ON',
+      'Annonce Vocale ON': 'Voice Alert ON',
+      '🔇 Annonce Vocale OFF': '🔇 Voice Alert OFF',
+      'Annonce Vocale OFF': 'Voice Alert OFF',
+      'Nouvelle course détectée !': 'New ride detected!',
+      '⚡ Accepter': '⚡ Accept',
+      'Passager MboaLift': 'MboaLift Passenger',
     }
   };
 
@@ -1074,6 +1106,7 @@
       out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)➔(.+)/gi, 'Course urbaine Douala : $1 ➔ $2');
       out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)→(.+)/gi, 'Course urbaine Douala : $1 → $2');
       out = out.replace(/\bTransport mode adjustment\s*\((.+?)\)/gi, 'Ajustement mode de transport ($1)');
+      out = out.replace(/\bNew ride available at\s*(.+?)\s*for\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Nouvelle course disponible à $1 pour $2 FCFA');
     } else {
       out = out.replace(/\bCourse n°\s*(\d+)\b/gi, 'Ride #$1');
       out = out.replace(/\bCourse #(\d+)\b/gi, 'Ride #$1');
@@ -1101,6 +1134,7 @@
       out = out.replace(/\bCourse urbaine Douala\s*:\s*(.+?)➔(.+)/gi, 'Urban ride Douala : $1 ➔ $2');
       out = out.replace(/\bCourse urbaine Douala\s*:\s*(.+?)→(.+)/gi, 'Urban ride Douala : $1 → $2');
       out = out.replace(/\bAjustement mode de transport\s*\((.+?)\)/gi, 'Transport mode adjustment ($1)');
+      out = out.replace(/\bNouvelle course disponible à\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New ride available at $1 for $2 FCFA');
     }
     return out;
   }

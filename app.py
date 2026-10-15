@@ -964,6 +964,8 @@ def driver_dashboard():
                 """,
                 (driver_id,)
             )
+            active_mission = cur.fetchone()
+
             # Fetch driver profile for location
             cur.execute("SELECT current_location, vehicle_type, vehicle_info FROM drivers WHERE id = %s", (driver_id,))
             driver_info = cur.fetchone() or {}
@@ -2874,6 +2876,52 @@ def api_map_data():
         "landmarks": DOUALA_LANDMARKS,
         "active_drivers": active_drivers,
         "available_rides": available_rides
+    })
+
+
+@app.route("/api/driver/alerts")
+def api_driver_alerts():
+    """
+    Lightweight real-time endpoint for Driver Voice Announcements.
+    Returns latest pending available rides in Douala for speech synthesis alerts.
+    """
+    conn = get_db()
+    rides = []
+    if conn:
+        try:
+            cur = conn.cursor(dictionary=True)
+            cur.execute(
+                """
+                SELECT r.id, r.pickup, r.destination, r.fare, r.vehicle_type, r.passengers,
+                       r.created_at, u.full_name AS rider_name
+                FROM rides r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.status = 'PENDING' AND r.driver_id IS NULL
+                ORDER BY r.created_at DESC LIMIT 15
+                """
+            )
+            for r in cur.fetchall():
+                rides.append({
+                    "id": r["id"],
+                    "pickup": r["pickup"],
+                    "destination": r["destination"],
+                    "fare": int(round(float(r["fare"]))),
+                    "vehicle_type": r["vehicle_type"],
+                    "passengers": r["passengers"],
+                    "rider_name": r["rider_name"],
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None
+                })
+            cur.close()
+        except Error:
+            pass
+        finally:
+            conn.close()
+
+    return jsonify({
+        "success": True,
+        "count": len(rides),
+        "rides": rides,
+        "server_time": datetime.now().isoformat()
     })
 
 
