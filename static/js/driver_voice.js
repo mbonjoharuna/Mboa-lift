@@ -132,13 +132,23 @@
     const lang = getCurrentLang();
     const fareFormatted = formatFare(ride.fare);
     const pickup = ride.pickup || 'Douala';
+    const isNegotiated = Boolean(ride.is_negotiated || ride.negotiation_status === 'PROPOSED');
 
     let speechText = '';
-    if (lang === 'fr') {
-      // Exact requested prompt format: "Nouvelle course disponible à Akwa pour 1 500 FCFA"
-      speechText = `Nouvelle course disponible à ${pickup} pour ${fareFormatted} FCFA`;
+    if (isNegotiated) {
+      if (lang === 'fr') {
+        // Exact requested wording: "Offre négociée reçue à 1 200 FCFA"
+        speechText = `Offre négociée reçue à ${fareFormatted} FCFA`;
+      } else {
+        speechText = `Negotiated offer received at ${fareFormatted} FCFA`;
+      }
     } else {
-      speechText = `New ride available at ${pickup} for ${fareFormatted} FCFA`;
+      if (lang === 'fr') {
+        // Exact requested prompt format: "Nouvelle course disponible à Akwa pour 1 500 FCFA"
+        speechText = `Nouvelle course disponible à ${pickup} pour ${fareFormatted} FCFA`;
+      } else {
+        speechText = `New ride available at ${pickup} for ${fareFormatted} FCFA`;
+      }
     }
 
     // Trigger audible speech
@@ -162,38 +172,51 @@
 
     const fareFormatted = formatFare(ride.fare);
     const vIcon = ride.vehicle_type === 'bendskin' ? '🏍️' : (ride.vehicle_type === 'comfort' ? '🚗' : '🚕');
+    const isNegotiated = Boolean(ride.is_negotiated || ride.negotiation_status === 'PROPOSED');
 
     toast.innerHTML = `
       <div class="toast-voice-indicator">
-        <span class="toast-voice-wave">📢</span>
+        <span class="toast-voice-wave">${isNegotiated ? '🤝' : '📢'}</span>
       </div>
       <div class="toast-body">
         <div class="toast-title">
-          <span>${vIcon} Nouvelle course détectée !</span>
+          <span>${vIcon} ${isNegotiated ? 'Offre négociée reçue !' : 'Nouvelle course détectée !'}</span>
           <span class="toast-fare">${fareFormatted} XAF</span>
         </div>
+        ${isNegotiated && ride.original_fare ? `
+        <div style="font-size:0.75rem;color:#64748b;margin-bottom:2px;text-align:left;">
+          Tarif initial calculé : <del>${formatFare(ride.original_fare)} XAF</del> (Proposition passager)
+        </div>` : ''}
         <div class="toast-route">
           <strong>📍 ${ride.pickup}</strong> ➔ <strong>🎯 ${ride.destination}</strong>
         </div>
         <div class="toast-sub">
           Passager : ${ride.rider_name || 'Passager MboaLift'} (${ride.passengers || 1} pers.)
         </div>
-      </div>
-      <div class="toast-actions">
-        <form method="POST" action="/driver/ride/${ride.id}/accept" style="margin:0;">
-          <button type="submit" class="btn-toast-accept">⚡ Accepter</button>
-        </form>
-        <button type="button" class="btn-toast-dismiss" title="Fermer" onclick="this.closest('.driver-voice-toast').classList.remove('active')">✕</button>
+        <div class="toast-actions">
+          <form method="POST" action="/driver/ride/${ride.id}/accept" style="margin:0;">
+            <button type="submit" class="btn-toast-accept">⚡ Accepter ${isNegotiated ? '(' + fareFormatted + ' F)' : ''}</button>
+          </form>
+          <button type="button" class="btn-toast-counter-toggle" onclick="var b=document.getElementById('toastCounterBox_${ride.id}');if(b){b.style.display=(b.style.display==='none'||!b.style.display)?'flex':'none';}">💬 Contre-proposer</button>
+          <button type="button" class="btn-toast-dismiss" title="Refuser l'offre" onclick="this.closest('.driver-voice-toast').classList.remove('active')">✕ Refuser</button>
+        </div>
+        <div class="toast-counter-box" id="toastCounterBox_${ride.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #cbd5e1;align-items:center;gap:6px;text-align:left;">
+          <form method="POST" action="/driver/ride/${ride.id}/counter" style="display:flex;gap:6px;align-items:center;margin:0;width:100%;">
+            <span style="font-size:0.75rem;color:#475569;white-space:nowrap;font-weight:600;">Votre prix :</span>
+            <input type="number" name="counter_fare" value="${Math.round(ride.fare + 100)}" step="50" min="300" style="width:100px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;" required>
+            <button type="submit" style="padding:4px 10px;background:#0284c7;color:#fff;border:none;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;">Envoyer l'offre</button>
+          </form>
+        </div>
       </div>
     `;
 
     toast.classList.add('active');
 
-    // Auto-dismiss after 14 seconds if not clicked
+    // Auto-dismiss after 16 seconds if not clicked
     if (toast._timer) clearTimeout(toast._timer);
     toast._timer = setTimeout(() => {
       toast.classList.remove('active');
-    }, 14000);
+    }, 16000);
   }
 
   // Poll driver alerts endpoint

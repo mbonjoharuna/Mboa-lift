@@ -47,7 +47,7 @@
         </thead>
         <tbody>
             {% for r in rides %}
-            <tr>
+            <tr class="{% if r.negotiation_status == 'PROPOSED' %}row-negotiated{% endif %}">
                 <td>#{{ r.id }}</td>
                 <td>
                     {% if r.vehicle_type == 'bendskin' %}
@@ -57,17 +57,52 @@
                     {% else %}
                         <span class="badge badge-taxi">🚕 Taxi Jaune</span>
                     {% endif %}
+                    {% if r.negotiation_status == 'PROPOSED' %}
+                        <br><span class="badge badge-negotiated" style="margin-top:4px;display:inline-block;">🤝 Marchandage</span>
+                    {% elif r.negotiation_status == 'COUNTERED' %}
+                        <br><span class="badge badge-countered" style="margin-top:4px;display:inline-block;">💬 Contre-offre active</span>
+                    {% endif %}
                 </td>
                 <td>{{ r.rider_name }}<br><small>📞 {{ r.rider_phone }}</small></td>
                 <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
                 <td>{{ r.passengers }}</td>
-                <td><strong>{{ "%.0f"|format(r.fare) }} XAF</strong></td>
+                <td>
+                    <strong>{{ "%.0f"|format(r.fare) }} XAF</strong>
+                    {% if r.original_fare and r.negotiation_status == 'PROPOSED' and r.original_fare != r.fare %}
+                        <br><small style="color:#64748b;font-size:0.75rem;">(Initial : <del>{{ "%.0f"|format(r.original_fare) }} XAF</del>)</small>
+                    {% elif r.driver_counter_fare and r.negotiation_status == 'COUNTERED' %}
+                        <br><small style="color:#0284c7;font-size:0.75rem;font-weight:600;">Contre-offre : {{ "%.0f"|format(r.driver_counter_fare) }} XAF</small>
+                    {% endif %}
+                </td>
                 <td>{{ r.created_at.strftime('%d/%m %H:%M') if r.created_at else '-' }}</td>
                 <td>
-                    <form method="POST" action="{{ url_for('driver_accept_ride', ride_id=r.id) }}"
-                          onsubmit="return confirm('Accepter cette course ?');">
-                        <button type="submit" class="btn-primary btn-sm">Accepter la course</button>
-                    </form>
+                    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
+                        <form method="POST" action="{{ url_for('driver_accept_ride', ride_id=r.id) }}"
+                              onsubmit="return confirm('Accepter cette course pour {{ "%.0f"|format(r.fare) }} XAF ?');" style="margin:0;">
+                            <button type="submit" class="btn-primary btn-sm">
+                                {% if r.negotiation_status == 'PROPOSED' %}
+                                    ⚡ Accepter l'offre ({{ "%.0f"|format(r.fare) }} XAF)
+                                {% else %}
+                                    Accepter la course
+                                {% endif %}
+                            </button>
+                        </form>
+                        <button type="button" class="btn-outline btn-sm"
+                                onclick="var cf=document.getElementById('counterForm_{{ r.id }}'); if(cf){cf.style.display=(cf.style.display==='none'||!cf.style.display)?'flex':'none';}">
+                            💬 Contre-proposer
+                        </button>
+                        <form method="POST" action="{{ url_for('driver_counter_ride', ride_id=r.id) }}"
+                              id="counterForm_{{ r.id }}"
+                              style="display:none;align-items:center;gap:4px;margin-top:4px;background:#f8fafc;padding:6px;border-radius:6px;border:1px solid #cbd5e1;width:100%;box-sizing:border-box;">
+                            <input type="number" name="counter_fare"
+                                   value="{{ ((r.fare + 100) if r.fare < (r.original_fare or r.fare) else (r.fare + 200))|round|int }}"
+                                   step="50" min="300"
+                                   style="width:85px;padding:4px 6px;border:1px solid #94a3b8;border-radius:4px;font-size:0.78rem;" required>
+                            <button type="submit" class="btn-sm" style="background:#0284c7;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:0.75rem;cursor:pointer;">
+                                Proposer
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

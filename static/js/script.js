@@ -43,7 +43,98 @@ function initFareCalculator() {
     const fareAmount = document.getElementById("fareAmount");
     const fareMode = document.getElementById("fareMode");
 
+    const streetNegotiationCard = document.getElementById("streetNegotiationCard");
+    const negotiatedFareInput = document.getElementById("negotiatedFareInput");
+    const btnFareMinus100 = document.getElementById("btnFareMinus100");
+    const btnFarePlus100 = document.getElementById("btnFarePlus100");
+    const negotiationStatusPill = document.getElementById("negotiationStatusPill");
+    const negotiationStatusHint = document.getElementById("negotiationStatusHint");
+    const bargainChips = document.querySelectorAll(".bargain-chip");
+
+    let currentBaseFare = 0;
+
     if (!pickup || !destination || !fareBox) return;
+
+    function formatNumber(num) {
+        return Math.round(Number(num) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function updateNegotiationUI() {
+        if (!negotiatedFareInput || !currentBaseFare) return;
+        const offer = parseFloat(negotiatedFareInput.value) || currentBaseFare;
+        const diff = Math.round(offer - currentBaseFare);
+
+        bargainChips.forEach(chip => {
+            const delta = chip.getAttribute("data-delta");
+            const action = chip.getAttribute("data-action");
+            if (action === "reset" && diff === 0) {
+                chip.classList.add("active");
+            } else if (delta && parseInt(delta, 10) === diff) {
+                chip.classList.add("active");
+            } else {
+                chip.classList.remove("active");
+            }
+        });
+
+        if (negotiationStatusPill && negotiationStatusHint) {
+            if (diff < 0) {
+                negotiationStatusPill.className = "negotiation-status-pill status-discount";
+                negotiationStatusPill.textContent = "🤝 Offre négociée : " + formatNumber(offer) + " XAF (" + diff + " F)";
+                negotiationStatusHint.textContent = "Vous proposez " + Math.abs(diff) + " FCFA de moins que le tarif standard. Les chauffeurs peuvent accepter ou contre-proposer.";
+            } else if (diff > 0) {
+                negotiationStatusPill.className = "negotiation-status-pill status-tip";
+                negotiationStatusPill.textContent = "⚡ Offre prioritaire : " + formatNumber(offer) + " XAF (+" + diff + " F)";
+                negotiationStatusHint.textContent = "Bonus de rapidité pour attirer un chauffeur immédiatement en heure de pointe.";
+            } else {
+                negotiationStatusPill.className = "negotiation-status-pill status-standard";
+                negotiationStatusPill.textContent = "Prix standard calculé (" + formatNumber(offer) + " XAF)";
+                negotiationStatusHint.textContent = "Tarif équitable normal recommandé pour Douala.";
+            }
+        }
+    }
+
+    function setNegotiatedFare(amount) {
+        if (!negotiatedFareInput) return;
+        const minFare = Math.max(300, Math.round(currentBaseFare * 0.40));
+        const maxFare = Math.round(currentBaseFare * 3.0);
+        let clamped = Math.max(minFare, Math.min(maxFare, Math.round(amount)));
+        negotiatedFareInput.value = clamped;
+        updateNegotiationUI();
+    }
+
+    if (btnFareMinus100) {
+        btnFareMinus100.addEventListener("click", function() {
+            const current = parseFloat(negotiatedFareInput.value) || currentBaseFare;
+            setNegotiatedFare(current - 100);
+        });
+    }
+
+    if (btnFarePlus100) {
+        btnFarePlus100.addEventListener("click", function() {
+            const current = parseFloat(negotiatedFareInput.value) || currentBaseFare;
+            setNegotiatedFare(current + 100);
+        });
+    }
+
+    if (negotiatedFareInput) {
+        negotiatedFareInput.addEventListener("input", updateNegotiationUI);
+        negotiatedFareInput.addEventListener("change", function() {
+            setNegotiatedFare(parseFloat(this.value) || currentBaseFare);
+        });
+    }
+
+    bargainChips.forEach(chip => {
+        chip.addEventListener("click", function(e) {
+            e.preventDefault();
+            const action = this.getAttribute("data-action");
+            const delta = this.getAttribute("data-delta");
+            if (action === "reset") {
+                setNegotiatedFare(currentBaseFare);
+            } else if (delta) {
+                setNegotiatedFare(currentBaseFare + parseInt(delta, 10));
+            }
+        });
+    });
 
     function updateFare() {
         const p = pickup.value.trim();
@@ -62,6 +153,7 @@ function initFareCalculator() {
             fareDestination.textContent = d;
             fareAmount.textContent = _t("Invalid (same location)");
             fareAmount.style.color = "#dc3545";
+            if (streetNegotiationCard) streetNegotiationCard.style.display = "none";
             return;
         }
 
@@ -78,9 +170,20 @@ function initFareCalculator() {
                 if (data.fare !== null && data.fare !== undefined) {
                     fareAmount.textContent = data.fare + " " + (data.currency || "XAF");
                     fareAmount.style.color = "";
+                    currentBaseFare = data.fare;
+                    if (streetNegotiationCard) {
+                        streetNegotiationCard.style.display = "block";
+                        const minFare = Math.max(300, Math.round(data.fare * 0.40));
+                        if (negotiatedFareInput) {
+                            negotiatedFareInput.min = minFare;
+                            negotiatedFareInput.max = Math.round(data.fare * 3.0);
+                        }
+                        setNegotiatedFare(data.fare);
+                    }
                 } else {
                     fareAmount.textContent = _t("Not available");
                     fareAmount.style.color = "#dc3545";
+                    if (streetNegotiationCard) streetNegotiationCard.style.display = "none";
                 }
             })
             .catch(function () {
@@ -93,6 +196,11 @@ function initFareCalculator() {
                 else if (vehicleType === "comfort") baseEst = 2200;
                 fareAmount.textContent = baseEst + " " + _t("XAF (estimate)");
                 fareAmount.style.color = "";
+                currentBaseFare = baseEst;
+                if (streetNegotiationCard) {
+                    streetNegotiationCard.style.display = "block";
+                    setNegotiatedFare(baseEst);
+                }
             });
     }
 

@@ -72,6 +72,68 @@
         <span class="detail-val fare-badge" style="margin-left:auto;">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
     </div>
 
+    <!-- Live Negotiation Box ("Marchandage à la Doualaise") -->
+    <div class="tracker-negotiation-box" id="trackerNegotiationBox"
+         style="{% if active_ride.status != 'PENDING' and active_ride.negotiation_status in ['NONE', ''] %}display:none;{% endif %}margin-bottom:14px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;text-align:left;">
+        
+        <!-- Case 1: Driver Counter-Offer Received -->
+        <div id="counterOfferSection" style="{% if active_ride.negotiation_status != 'COUNTERED' %}display:none;{% endif %}background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:8px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+                <span style="font-size:1.4rem;line-height:1;">💬</span>
+                <div>
+                    <strong style="color:#1e3a8a;font-size:0.92rem;display:block;">Contre-offre reçue d'un chauffeur !</strong>
+                    <p style="margin:2px 0 0;font-size:0.82rem;color:#334155;">
+                        Le chauffeur <strong id="counterDriverName">{{ active_ride.counter_driver_name or 'partenaire' }}</strong> vous propose
+                        <strong class="counter-fare-text" style="color:#0284c7;font-size:0.95rem;">{{ "%.0f"|format(active_ride.driver_counter_fare or 0) }} XAF</strong>
+                        au lieu de <strong>{{ "%.0f"|format(active_ride.fare) }} XAF</strong>.
+                    </p>
+                </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+                <button type="button" class="btn-primary btn-sm" id="btnAcceptCounter" onclick="acceptDriverCounter({{ active_ride.id }})">
+                    ⚡ Accepter la contre-offre ({{ "%.0f"|format(active_ride.driver_counter_fare or 0) }} XAF)
+                </button>
+                <button type="button" class="btn-outline btn-sm" id="btnDeclineCounter" onclick="declineDriverCounter({{ active_ride.id }})" style="color:#b91c1c;border-color:#fca5a5;">
+                    ✕ Refuser
+                </button>
+            </div>
+        </div>
+
+        <!-- Case 2: Passenger Negotiated Offer Waiting -->
+        <div id="proposedOfferSection" style="{% if active_ride.negotiation_status != 'PROPOSED' %}display:none;{% endif %}">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+                <div>
+                    <strong style="color:#0f172a;font-size:0.88rem;display:flex;align-items:center;gap:6px;">
+                        <span>🤝</span> Offre marchandée en direct : <span id="currentNegotiatedFareText">{{ "%.0f"|format(active_ride.fare) }} XAF</span>
+                    </strong>
+                    <small style="color:#64748b;display:block;margin-top:2px;">
+                        Tarif standard calculé : <del id="currentOriginalFareText">{{ "%.0f"|format(active_ride.original_fare or active_ride.fare) }} XAF</del> · En attente de validation chauffeur.
+                    </small>
+                </div>
+                {% if active_ride.status == 'PENDING' %}
+                <button type="button" class="btn-outline btn-sm" id="btnToggleAdjustOffer" onclick="var f=document.getElementById('adjustOfferForm'); if(f){f.style.display=(f.style.display==='none'||!f.style.display)?'flex':'none';}">
+                    ✏️ Ajuster mon offre
+                </button>
+                {% endif %}
+            </div>
+            <!-- Collapsible adjustment form -->
+            <form id="adjustOfferForm" onsubmit="event.preventDefault(); submitAdjustOffer({{ active_ride.id }});"
+                  style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #cbd5e1;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:0.8rem;color:#475569;font-weight:600;">Nouveau montant :</span>
+                <input type="number" id="inputNewOffer" value="{{ "%.0f"|format(active_ride.fare) }}" step="50" min="300"
+                       style="width:105px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;" required>
+                <button type="submit" class="btn-primary btn-sm">Transmettre l'offre</button>
+            </form>
+        </div>
+
+        <!-- Case 3: Accepted negotiated fare -->
+        <div id="acceptedOfferSection" style="{% if active_ride.negotiation_status != 'ACCEPTED' or active_ride.status == 'PENDING' %}display:none;{% endif %}">
+            <span style="font-size:0.85rem;color:#166534;font-weight:600;display:flex;align-items:center;gap:6px;">
+                <span>✅</span> Tarif négocié convenu à {{ "%.0f"|format(active_ride.fare) }} XAF avec votre chauffeur.
+            </span>
+        </div>
+    </div>
+
     <!-- Assigned Driver Ribbon -->
     <div class="tracker-driver-ribbon" style="{% if not active_ride.driver_name and active_ride.status == 'PENDING' %}display:none;{% endif %}">
         <div class="driver-info-meta">

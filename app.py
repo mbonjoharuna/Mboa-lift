@@ -130,6 +130,9 @@ FLASH_TRANSLATIONS = {
         "Could not enable driver.": "Impossible d'activer le chauffeur.",
         "Driver deleted.": "Chauffeur supprimé.",
         "Could not delete driver (may have related records).": "Impossible de supprimer le chauffeur (des enregistrements y sont liés).",
+        "Please enter a counter offer amount.": "Veuillez indiquer un montant de contre-offre.",
+        "Invalid counter offer amount.": "Montant de contre-offre invalide.",
+        "Error submitting counter offer.": "Erreur lors de l'envoi de la contre-offre.",
     }
 }
 
@@ -592,8 +595,40 @@ def get_db():
         return None
 
 
+def init_db_schema():
+    """Ensure database schema has required columns for fare negotiation and other features."""
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'original_fare'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN original_fare DECIMAL(10, 2) NULL AFTER fare")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'negotiation_status'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN negotiation_status ENUM('NONE', 'PROPOSED', 'ACCEPTED', 'COUNTERED', 'DECLINED') DEFAULT 'NONE' AFTER original_fare")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'driver_counter_fare'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN driver_counter_fare DECIMAL(10, 2) NULL AFTER negotiation_status")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'counter_driver_id'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN counter_driver_id INT NULL AFTER driver_counter_fare")
+
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Schema migration error: {e}")
+    finally:
+        conn.close()
+
+
 def init_admin():
-    """Create a default admin if none exists."""
+    """Create a default admin if none exists, and ensure schema migrations."""
+    init_db_schema()
     conn = get_db()
     if not conn:
         return
@@ -1211,7 +1246,7 @@ def driver_cashout():
 @app.route("/driver/available-rides")
 @driver_required
 def driver_available_rides():
-    """List PENDING rides that any driver can accept."""
+    """List PENDING rides that any driver can accept, including negotiated offers."""
     rides = []
     conn = get_db()
     if conn:
@@ -1220,6 +1255,7 @@ def driver_available_rides():
             cur.execute(
                 """
                 SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.fare,
+                       r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
@@ -1249,6 +1285,7 @@ def driver_my_rides():
             cur.execute(
                 """
                 SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.fare,
+                       r.original_fare, r.negotiation_status,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
@@ -1270,8 +1307,9 @@ def driver_my_rides():
 @driver_required
 def driver_accept_ride(ride_id):
     """
-    Driver accepts a PENDING ride.
+    Driver accepts a PENDING ride (at proposed or standard fare).
     - Sets driver_id and status = ACCEPTED
+    - Sets negotiation_status = ACCEPTED if it was PROPOSED
     - Other drivers can no longer take this ride
     - Other PENDING rides of the same rider are cancelled
     """
@@ -1285,7 +1323,7 @@ def driver_accept_ride(ride_id):
         cur = conn.cursor(dictionary=True)
         # Lock-style check: only accept if still PENDING and no driver
         cur.execute(
-            "SELECT id, user_id, status, driver_id FROM rides WHERE id = %s",
+            "SELECT id, user_id, status, driver_id, fare, original_fare, negotiation_status FROM rides WHERE id = %s",
             (ride_id,)
         )
         ride = cur.fetchone()
@@ -1297,10 +1335,11 @@ def driver_accept_ride(ride_id):
             flash("This ride was already taken by another driver.", "warning")
             return redirect(url_for("driver_available_rides"))
 
-        # Assign this driver and mark driver as busy
+        # Assign this driver, update status and negotiation status
         cur.execute(
             """UPDATE rides
-               SET status = 'ACCEPTED', driver_id = %s
+               SET status = 'ACCEPTED', driver_id = %s,
+                   negotiation_status = CASE WHEN negotiation_status = 'PROPOSED' THEN 'ACCEPTED' ELSE negotiation_status END
                WHERE id = %s AND status = 'PENDING' AND driver_id IS NULL""",
             (driver_id, ride_id)
         )
@@ -1324,9 +1363,11 @@ def driver_accept_ride(ride_id):
         cancelled = cur.rowcount
         conn.commit()
 
-        msg = "Ride accepted successfully!"
+        msg = f"Course #{ride_id} acceptée avec succès !"
+        if ride.get("negotiation_status") == "PROPOSED":
+            msg = f"Offre négociée acceptée à {int(round(float(ride['fare'])))} XAF ! Rendez-vous au point de prise en charge."
         if cancelled > 0:
-            msg += f" {cancelled} other pending request(s) from this rider were cancelled."
+            msg += f" {cancelled} autre(s) demande(s) en attente ont été annulées."
         flash(msg, "success")
         cur.close()
     except Error:
@@ -1334,6 +1375,86 @@ def driver_accept_ride(ride_id):
     finally:
         conn.close()
     return redirect(url_for("driver_my_rides"))
+
+
+@app.route("/driver/ride/<int:ride_id>/counter", methods=["POST"])
+@driver_required
+def driver_counter_ride(ride_id):
+    """
+    Driver submits a counter-offer to the passenger ("Marchandage à la Doualaise").
+    """
+    driver_id = session["driver_id"]
+    data = request.get_json(silent=True) or request.form
+    counter_fare = data.get("counter_fare")
+    is_ajax = request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if not counter_fare:
+        if is_ajax:
+            return jsonify({"success": False, "error": "Veuillez indiquer un montant de contre-offre."}), 400
+        flash("Veuillez indiquer un montant de contre-offre.", "warning")
+        return redirect(url_for("driver_available_rides"))
+
+    try:
+        counter_fare = float(counter_fare)
+        if counter_fare < 200:
+            raise ValueError
+    except (ValueError, TypeError):
+        if is_ajax:
+            return jsonify({"success": False, "error": "Montant de contre-offre invalide."}), 400
+        flash("Montant de contre-offre invalide.", "danger")
+        return redirect(url_for("driver_available_rides"))
+
+    conn = get_db()
+    if not conn:
+        if is_ajax:
+            return jsonify({"success": False, "error": "Database error"}), 500
+        flash("Database error.", "danger")
+        return redirect(url_for("driver_available_rides"))
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT id, user_id, fare, original_fare, status, driver_id FROM rides WHERE id = %s", (ride_id,))
+        ride = cur.fetchone()
+        if not ride:
+            cur.close()
+            if is_ajax:
+                return jsonify({"success": False, "error": "Ride not found"}), 404
+            flash("Course introuvable.", "danger")
+            return redirect(url_for("driver_available_rides"))
+
+        if ride["status"] != "PENDING" or ride["driver_id"] is not None:
+            cur.close()
+            if is_ajax:
+                return jsonify({"success": False, "error": "Cette course n'est plus disponible."}), 400
+            flash("Cette course n'est plus disponible.", "warning")
+            return redirect(url_for("driver_available_rides"))
+
+        cur.execute(
+            """UPDATE rides
+               SET driver_counter_fare = %s, counter_driver_id = %s, negotiation_status = 'COUNTERED'
+               WHERE id = %s AND status = 'PENDING' AND driver_id IS NULL""",
+            (counter_fare, driver_id, ride_id)
+        )
+        conn.commit()
+        cur.close()
+
+        msg = f"Votre contre-offre de {int(round(counter_fare))} XAF a été transmise au client !"
+        if is_ajax:
+            return jsonify({
+                "success": True,
+                "ride_id": ride_id,
+                "counter_fare": counter_fare,
+                "message": msg
+            })
+        flash(msg, "success")
+        return redirect(url_for("driver_available_rides"))
+    except Error as e:
+        if is_ajax:
+            return jsonify({"success": False, "error": str(e)}), 500
+        flash("Erreur lors de l'envoi de la contre-offre.", "danger")
+        return redirect(url_for("driver_available_rides"))
+    finally:
+        conn.close()
 
 
 @app.route("/driver/ride/<int:ride_id>/start", methods=["POST"])
@@ -1504,14 +1625,17 @@ def dashboard():
     if conn:
         try:
             cur = conn.cursor(dictionary=True)
-            # Active ongoing ride (ACCEPTED or IN_PROGRESS)
+            # Active ongoing or pending ride (PENDING, ACCEPTED or IN_PROGRESS)
             cur.execute(
                 """
-                SELECT r.id, r.pickup, r.destination, r.fare, r.status, r.vehicle_type, r.created_at,
-                       d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info, d.current_location AS driver_location
+                SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
+                       r.driver_counter_fare, r.counter_driver_id, r.status, r.vehicle_type, r.created_at,
+                       d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info, d.current_location AS driver_location,
+                       cd.full_name AS counter_driver_name, cd.phone AS counter_driver_phone, cd.vehicle_info AS counter_driver_vehicle
                 FROM rides r
                 LEFT JOIN drivers d ON r.driver_id = d.id
-                WHERE r.user_id = %s AND r.status IN ('ACCEPTED', 'IN_PROGRESS')
+                LEFT JOIN drivers cd ON r.counter_driver_id = cd.id
+                WHERE r.user_id = %s AND r.status IN ('PENDING', 'ACCEPTED', 'IN_PROGRESS')
                 ORDER BY r.created_at DESC LIMIT 1
                 """,
                 (user_id,)
@@ -1697,10 +1821,28 @@ def request_ride():
             passengers = 1
             flash("Bendskin moto-taxi is strictly limited to 1 passenger for road safety in Douala.", "info")
 
-        fare = get_fare(pickup, destination, vehicle_type)
-        if fare is None:
+        base_fare = get_fare(pickup, destination, vehicle_type)
+        if base_fare is None:
             flash("Could not calculate fare for this route.", "danger")
             return _reload_form()
+
+        # Douala Street Fare Negotiation ("Marchandage à la Doualaise")
+        negotiated_fare_input = request.form.get("negotiated_fare", "").strip()
+        fare = base_fare
+        original_fare = base_fare
+        negotiation_status = "NONE"
+
+        if negotiated_fare_input:
+            try:
+                parsed_offer = float(negotiated_fare_input)
+                min_allowed = max(300.0, base_fare * 0.40)
+                max_allowed = base_fare * 3.0
+                if min_allowed <= parsed_offer <= max_allowed and abs(parsed_offer - base_fare) >= 1.0:
+                    fare = parsed_offer
+                    original_fare = base_fare
+                    negotiation_status = "PROPOSED"
+            except (ValueError, TypeError):
+                pass
 
         driver_id = None
         if preferred_driver:
@@ -1728,9 +1870,9 @@ def request_ride():
                 if cur.fetchone():
                     cur.execute(
                         """INSERT INTO rides
-                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, fare, status)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
-                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, fare)
+                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status, status)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
+                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status)
                     )
                     cur.execute(
                         "UPDATE drivers SET availability = 'busy' WHERE id = %s",
@@ -1745,7 +1887,7 @@ def request_ride():
                     assigned = True
                     flash(
                         f"Ride requested and assigned to your chosen driver! "
-                        f"Fare: {fare} XAF. Please pay with MoMo / Orange Money from your dashboard.",
+                        f"Fare: {int(round(fare))} XAF. Please pay with MoMo / Orange Money from your dashboard.",
                         "success"
                     )
                 else:
@@ -1754,15 +1896,21 @@ def request_ride():
             if not assigned:
                 cur.execute(
                     """INSERT INTO rides
-                       (user_id, pickup, destination, passengers, vehicle_type, fare, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, 'PENDING')""",
-                    (session["user_id"], pickup, destination, passengers, vehicle_type, fare)
+                       (user_id, pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
+                    (session["user_id"], pickup, destination, passengers, vehicle_type, fare, original_fare, negotiation_status)
                 )
-                flash(
-                    f"Ride requested successfully ({VEHICLE_TYPES[vehicle_type]['label']})! "
-                    f"Estimated fare: {fare} XAF. Waiting for a driver to accept.",
-                    "success"
-                )
+                if negotiation_status == "PROPOSED":
+                    flash(
+                        f"Offre négociée transmise aux chauffeurs : {int(round(fare))} XAF (Tarif standard : {int(round(original_fare))} XAF). En attente d'acceptation !",
+                        "success"
+                    )
+                else:
+                    flash(
+                        f"Ride requested successfully ({VEHICLE_TYPES[vehicle_type]['label']})! "
+                        f"Estimated fare: {int(round(fare))} XAF. Waiting for a driver to accept.",
+                        "success"
+                    )
 
             conn.commit()
             cur.close()
@@ -1781,6 +1929,179 @@ def request_ride():
         selected_destination="",
         selected_vehicle_type="taxi",
     )
+
+
+# ============================================================
+# STREET FARE NEGOTIATION API ROUTES (Passenger)
+# ============================================================
+@app.route("/api/ride/<int:ride_id>/negotiate", methods=["POST"])
+@login_required
+def api_negotiate_ride_fare(ride_id):
+    """
+    Passenger adjusts their counter-offer on an active PENDING ride.
+    """
+    user_id = session["user_id"]
+    data = request.get_json(silent=True) or request.form
+    new_fare = data.get("fare") or data.get("negotiated_fare")
+    if not new_fare:
+        return jsonify({"success": False, "error": "Montant requis"}), 400
+
+    try:
+        new_fare = float(new_fare)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Montant invalide"}), 400
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"success": False, "error": "Erreur base de données"}), 500
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            "SELECT id, user_id, fare, original_fare, status FROM rides WHERE id = %s",
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        if not ride:
+            cur.close()
+            return jsonify({"success": False, "error": "Course introuvable"}), 404
+
+        if ride["user_id"] != user_id:
+            cur.close()
+            return jsonify({"success": False, "error": "Non autorisé"}), 403
+
+        if ride["status"] != "PENDING":
+            cur.close()
+            return jsonify({"success": False, "error": "Seules les courses en attente peuvent être négociées"}), 400
+
+        base_fare = float(ride["original_fare"] or ride["fare"])
+        min_allowed = max(300.0, base_fare * 0.40)
+        max_allowed = base_fare * 3.0
+
+        if not (min_allowed <= new_fare <= max_allowed):
+            cur.close()
+            return jsonify({
+                "success": False,
+                "error": f"L'offre doit être comprise entre {int(round(min_allowed))} et {int(round(max_allowed))} XAF."
+            }), 400
+
+        cur.execute(
+            """UPDATE rides
+               SET fare = %s, original_fare = %s, negotiation_status = 'PROPOSED',
+                   driver_counter_fare = NULL, counter_driver_id = NULL
+               WHERE id = %s AND status = 'PENDING' AND user_id = %s""",
+            (new_fare, base_fare, ride_id, user_id)
+        )
+        conn.commit()
+        cur.close()
+        return jsonify({
+            "success": True,
+            "ride_id": ride_id,
+            "fare": new_fare,
+            "original_fare": base_fare,
+            "negotiation_status": "PROPOSED",
+            "message": f"Offre mise à jour à {int(round(new_fare))} XAF"
+        })
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route("/api/ride/<int:ride_id>/accept-counter", methods=["POST"])
+@login_required
+def api_accept_driver_counter(ride_id):
+    """
+    Passenger accepts the driver's counter-offer.
+    """
+    user_id = session["user_id"]
+    conn = get_db()
+    if not conn:
+        return jsonify({"success": False, "error": "Erreur base de données"}), 500
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """SELECT r.id, r.user_id, r.driver_counter_fare, r.counter_driver_id, r.status,
+                      d.full_name AS driver_name, d.phone AS driver_phone
+               FROM rides r
+               LEFT JOIN drivers d ON r.counter_driver_id = d.id
+               WHERE r.id = %s""",
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        if not ride or ride["user_id"] != user_id:
+            cur.close()
+            return jsonify({"success": False, "error": "Course introuvable ou non autorisée"}), 404
+
+        if ride["status"] != "PENDING" or not ride["counter_driver_id"] or not ride["driver_counter_fare"]:
+            cur.close()
+            return jsonify({"success": False, "error": "Aucune contre-offre active à accepter"}), 400
+
+        driver_id = ride["counter_driver_id"]
+        agreed_fare = float(ride["driver_counter_fare"])
+
+        cur.execute(
+            """UPDATE rides
+               SET fare = %s, driver_id = %s, status = 'ACCEPTED', negotiation_status = 'ACCEPTED'
+               WHERE id = %s AND status = 'PENDING'""",
+            (agreed_fare, driver_id, ride_id)
+        )
+        cur.execute("UPDATE drivers SET availability = 'busy' WHERE id = %s", (driver_id,))
+        cur.execute(
+            "UPDATE rides SET status = 'CANCELLED' WHERE user_id = %s AND status = 'PENDING' AND id != %s",
+            (user_id, ride_id)
+        )
+        conn.commit()
+        cur.close()
+
+        flash(f"Contre-offre acceptée à {int(round(agreed_fare))} XAF ! Votre chauffeur est en route.", "success")
+        return jsonify({
+            "success": True,
+            "ride_id": ride_id,
+            "fare": agreed_fare,
+            "driver_name": ride["driver_name"],
+            "driver_phone": ride["driver_phone"]
+        })
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route("/api/ride/<int:ride_id>/decline-counter", methods=["POST"])
+@login_required
+def api_decline_driver_counter(ride_id):
+    """
+    Passenger declines the driver's counter-offer.
+    """
+    user_id = session["user_id"]
+    conn = get_db()
+    if not conn:
+        return jsonify({"success": False, "error": "Erreur base de données"}), 500
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT id, user_id, status FROM rides WHERE id = %s", (ride_id,))
+        ride = cur.fetchone()
+        if not ride or ride["user_id"] != user_id:
+            cur.close()
+            return jsonify({"success": False, "error": "Course introuvable ou non autorisée"}), 404
+
+        cur.execute(
+            """UPDATE rides
+               SET driver_counter_fare = NULL, counter_driver_id = NULL, negotiation_status = 'DECLINED'
+               WHERE id = %s AND status = 'PENDING' AND user_id = %s""",
+            (ride_id, user_id)
+        )
+        conn.commit()
+        cur.close()
+        flash("Contre-offre déclinée. Votre demande reste ouverte aux autres chauffeurs.", "info")
+        return jsonify({"success": True, "message": "Contre-offre déclinée"})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 # ============================================================
@@ -3103,7 +3424,8 @@ def api_map_data():
 def api_driver_alerts():
     """
     Lightweight real-time endpoint for Driver Voice Announcements.
-    Returns latest pending available rides in Douala for speech synthesis alerts.
+    Returns latest pending available rides in Douala for speech synthesis alerts,
+    including street negotiation counter-offers.
     """
     conn = get_db()
     rides = []
@@ -3112,7 +3434,8 @@ def api_driver_alerts():
             cur = conn.cursor(dictionary=True)
             cur.execute(
                 """
-                SELECT r.id, r.pickup, r.destination, r.fare, r.vehicle_type, r.passengers,
+                SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
+                       r.driver_counter_fare, r.vehicle_type, r.passengers,
                        r.created_at, u.full_name AS rider_name
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
@@ -3121,11 +3444,19 @@ def api_driver_alerts():
                 """
             )
             for r in cur.fetchall():
+                orig_fare = float(r["original_fare"]) if r.get("original_fare") is not None else float(r["fare"])
+                cur_fare = float(r["fare"])
+                neg_status = r.get("negotiation_status") or "NONE"
+                is_neg = (neg_status == "PROPOSED") or (abs(orig_fare - cur_fare) >= 1.0)
                 rides.append({
                     "id": r["id"],
                     "pickup": r["pickup"],
                     "destination": r["destination"],
-                    "fare": int(round(float(r["fare"]))),
+                    "fare": int(round(cur_fare)),
+                    "original_fare": int(round(orig_fare)),
+                    "negotiation_status": neg_status,
+                    "is_negotiated": is_neg,
+                    "driver_counter_fare": int(round(float(r["driver_counter_fare"]))) if r.get("driver_counter_fare") else None,
                     "vehicle_type": r["vehicle_type"],
                     "passengers": r["passengers"],
                     "rider_name": r["rider_name"],
@@ -3148,7 +3479,7 @@ def api_driver_alerts():
 @app.route("/api/ride-status/<int:ride_id>")
 def api_ride_status(ride_id):
     """
-    Return real-time live status, driver assignment, and ETA progress for a ride.
+    Return real-time live status, driver assignment, street negotiation status, and ETA progress for a ride.
     """
     user_id = session.get("user_id")
     driver_id = session.get("driver_id")
@@ -3163,15 +3494,18 @@ def api_ride_status(ride_id):
         cur.execute(
             """
             SELECT r.id, r.user_id, r.driver_id, r.pickup, r.destination, r.passengers,
-                   r.vehicle_type, r.fare, r.status, r.created_at,
+                   r.vehicle_type, r.fare, r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
+                   r.status, r.created_at,
                    u.full_name AS rider_name, u.phone AS rider_phone,
                    d.full_name AS driver_name, d.phone AS driver_phone,
                    d.vehicle_info, d.current_location AS driver_location,
+                   cd.full_name AS counter_driver_name, cd.phone AS counter_driver_phone, cd.vehicle_info AS counter_driver_vehicle,
                    (SELECT status FROM payments p WHERE p.ride_id = r.id ORDER BY p.created_at DESC LIMIT 1) AS payment_status,
                    (SELECT id FROM payments p WHERE p.ride_id = r.id ORDER BY p.created_at DESC LIMIT 1) AS payment_id
             FROM rides r
             JOIN users u ON r.user_id = u.id
             LEFT JOIN drivers d ON r.driver_id = d.id
+            LEFT JOIN drivers cd ON r.counter_driver_id = cd.id
             WHERE r.id = %s
             """,
             (ride_id,)
@@ -3182,7 +3516,7 @@ def api_ride_status(ride_id):
             return jsonify({"error": "Ride not found"}), 404
 
         # Security check: must be logged in as rider, driver, or admin
-        if not (admin_id or (user_id and ride["user_id"] == user_id) or (driver_id and ride["driver_id"] == driver_id)):
+        if not (admin_id or (user_id and ride["user_id"] == user_id) or (driver_id and (ride["driver_id"] == driver_id or ride["counter_driver_id"] == driver_id))):
             return jsonify({"error": "Unauthorized"}), 403
 
         status = ride["status"]
@@ -3192,7 +3526,13 @@ def api_ride_status(ride_id):
 
         if status == "PENDING":
             step = 1
-            label = "Recherche d'un chauffeur à proximité..."
+            if ride.get("negotiation_status") == "COUNTERED":
+                c_amt = int(round(float(ride["driver_counter_fare"]))) if ride.get("driver_counter_fare") else 0
+                label = f"Contre-offre reçue d'un chauffeur : {c_amt} XAF"
+            elif ride.get("negotiation_status") == "PROPOSED":
+                label = f"Offre négociée soumise ({int(round(float(ride['fare'])))} XAF) · En attente d'un chauffeur..."
+            else:
+                label = "Recherche d'un chauffeur à proximité..."
             eta = "1-3 min"
         elif status == "ACCEPTED":
             step = 2
@@ -3216,6 +3556,10 @@ def api_ride_status(ride_id):
         d_coords = DOUALA_COORDINATES.get(ride["destination"])
         drv_coords = DOUALA_COORDINATES.get(ride["driver_location"])
 
+        orig_fare = float(ride["original_fare"]) if ride.get("original_fare") is not None else float(ride["fare"])
+        cur_fare = float(ride["fare"])
+        neg_status = ride.get("negotiation_status") or "NONE"
+
         return jsonify({
             "id": ride["id"],
             "status": status,
@@ -3227,7 +3571,15 @@ def api_ride_status(ride_id):
             "pickup_coords": p_coords,
             "dest_coords": d_coords,
             "driver_coords": drv_coords,
-            "fare": float(ride["fare"]),
+            "fare": cur_fare,
+            "original_fare": orig_fare,
+            "negotiation_status": neg_status,
+            "is_negotiated": (neg_status == "PROPOSED") or (abs(orig_fare - cur_fare) >= 1.0),
+            "driver_counter_fare": float(ride["driver_counter_fare"]) if ride.get("driver_counter_fare") else None,
+            "counter_driver_id": ride.get("counter_driver_id"),
+            "counter_driver_name": ride.get("counter_driver_name"),
+            "counter_driver_phone": ride.get("counter_driver_phone"),
+            "counter_driver_vehicle": ride.get("counter_driver_vehicle"),
             "vehicle_type": ride["vehicle_type"],
             "rider_name": ride["rider_name"],
             "rider_phone": ride["rider_phone"],

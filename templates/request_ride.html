@@ -144,9 +144,51 @@
                     <strong id="fareMode">Taxi Jaune</strong>
                 </div>
                 <div class="fare-row fare-total">
-                    <span>Tarif estimé :</span>
+                    <span>Tarif calculé :</span>
                     <strong id="fareAmount">-</strong>
                 </div>
+
+                <!-- Douala Street Fare Negotiation Widget ("Marchandage à la Doualaise") -->
+                <div class="street-negotiation-card" id="streetNegotiationCard">
+                    <div class="negotiation-card-header">
+                        <div class="negotiation-title-row">
+                            <span class="negotiation-icon">🤝</span>
+                            <div class="negotiation-header-text">
+                                <strong class="negotiation-title">Marchandage à la Doualaise</strong>
+                                <span class="negotiation-subtitle">Proposez votre prix directement au chauffeur (ex: Ndokoti, Deïdo, Akwa)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="negotiation-card-body">
+                        <div class="negotiation-stepper-row">
+                            <label for="negotiatedFareInput" class="negotiation-stepper-label">Votre proposition de tarif :</label>
+                            <div class="stepper-controls">
+                                <button type="button" class="btn-step-fare" id="btnFareMinus100" title="Baisser de 100 FCFA">- 100 F</button>
+                                <div class="fare-input-box">
+                                    <input type="number" id="negotiatedFareInput" name="negotiated_fare" class="input-negotiated-fare" step="50" min="300" max="25000">
+                                    <span class="fare-currency-addon">XAF</span>
+                                </div>
+                                <button type="button" class="btn-step-fare" id="btnFarePlus100" title="Augmenter de 100 FCFA">+ 100 F</button>
+                            </div>
+                        </div>
+
+                        <!-- Fast Preset Bargain Chips -->
+                        <div class="bargain-quick-chips">
+                            <button type="button" class="bargain-chip" data-delta="-200">- 200 FCFA</button>
+                            <button type="button" class="bargain-chip" data-delta="-100">- 100 FCFA</button>
+                            <button type="button" class="bargain-chip active" id="chipStandardFare" data-action="reset">Prix standard</button>
+                            <button type="button" class="bargain-chip" data-delta="100">+ 100 FCFA (Heure de pointe)</button>
+                        </div>
+
+                        <!-- Dynamic Negotiation Difference Banner -->
+                        <div class="negotiation-feedback" id="negotiationFeedback">
+                            <span class="negotiation-status-pill" id="negotiationStatusPill">Prix standard calculé</span>
+                            <small class="negotiation-status-hint" id="negotiationStatusHint">Les chauffeurs acceptent plus facilement les offres équitables.</small>
+                        </div>
+                    </div>
+                </div>
+
                 <p class="fare-note">Tarif transparent garanti avant le départ. Paiement par MTN MoMo ou Orange Money.</p>
             </div>
 

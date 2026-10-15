@@ -137,6 +137,59 @@
       }
     }
 
+    // Dynamic Negotiation UI update ("Marchandage à la Doualaise")
+    const negBox = container.querySelector('#trackerNegotiationBox');
+    if (negBox) {
+      const counterSec = negBox.querySelector('#counterOfferSection');
+      const proposedSec = negBox.querySelector('#proposedOfferSection');
+      const acceptedSec = negBox.querySelector('#acceptedOfferSection');
+      const fareBadgeEl = container.querySelector('.fare-badge');
+
+      if (fareBadgeEl && ride.fare) {
+        fareBadgeEl.textContent = Math.round(ride.fare) + ' XAF';
+      }
+
+      if (ride.negotiation_status === 'COUNTERED' && ride.driver_counter_fare) {
+        negBox.style.display = 'block';
+        if (counterSec) {
+          counterSec.style.display = 'block';
+          const cAmt = Math.round(ride.driver_counter_fare);
+          const cText = counterSec.querySelector('.counter-fare-text');
+          if (cText) cText.textContent = cAmt + ' XAF';
+          const cBtn = counterSec.querySelector('#btnAcceptCounter');
+          if (cBtn) cBtn.textContent = '⚡ Accepter la contre-offre (' + cAmt + ' XAF)';
+          const dNameEl = counterSec.querySelector('#counterDriverName');
+          if (dNameEl && ride.counter_driver_name) dNameEl.textContent = ride.counter_driver_name;
+        }
+        if (proposedSec) proposedSec.style.display = 'none';
+        if (acceptedSec) acceptedSec.style.display = 'none';
+
+        // Alert chime if counter offer freshly arrived
+        if (!negBox._hasChimedCounter) {
+          playNotificationChime();
+          negBox._hasChimedCounter = true;
+        }
+      } else if (ride.negotiation_status === 'PROPOSED') {
+        negBox.style.display = 'block';
+        if (counterSec) counterSec.style.display = 'none';
+        if (proposedSec) {
+          proposedSec.style.display = 'block';
+          const curOfferText = proposedSec.querySelector('#currentNegotiatedFareText');
+          if (curOfferText) curOfferText.textContent = Math.round(ride.fare) + ' XAF';
+        }
+        if (acceptedSec) acceptedSec.style.display = 'none';
+      } else if (ride.negotiation_status === 'ACCEPTED' && ride.status !== 'PENDING') {
+        negBox.style.display = 'block';
+        if (counterSec) counterSec.style.display = 'none';
+        if (proposedSec) proposedSec.style.display = 'none';
+        if (acceptedSec) acceptedSec.style.display = 'block';
+      } else {
+        if (ride.status !== 'PENDING') {
+          negBox.style.display = 'none';
+        }
+      }
+    }
+
     // Driver Details Ribbon
     if (driverRibbonEl) {
       if (ride.driver_name) {
@@ -168,7 +221,7 @@
           payBtn = document.createElement('a');
           payBtn.className = 'btn-primary btn-sm btn-pay-action';
           payBtn.href = '/payment/' + ride.id;
-          payBtn.textContent = '💳 Payer par MoMo / OM (' + ride.fare + ' XAF)';
+          payBtn.textContent = '💳 Payer par MoMo / OM (' + Math.round(ride.fare) + ' XAF)';
           actionsEl.appendChild(payBtn);
         }
       } else if (ride.is_paid) {
@@ -217,6 +270,69 @@
       // Audio context might be restricted before user gesture
     }
   }
+
+  // Global actions for Passenger Street Fare Bargaining
+  window.acceptDriverCounter = function (rideId) {
+    if (!confirm("Accepter cette contre-offre et confirmer votre course ?")) return;
+    fetch('/api/ride/' + rideId + '/accept-counter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error || "Impossible d'accepter la contre-offre.");
+        }
+      })
+      .catch(() => alert("Erreur réseau. Veuillez réessayer."));
+  };
+
+  window.declineDriverCounter = function (rideId) {
+    if (!confirm("Refuser la contre-offre du chauffeur ? Votre demande reste ouverte.")) return;
+    fetch('/api/ride/' + rideId + '/decline-counter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error || "Impossible de refuser.");
+        }
+      })
+      .catch(() => alert("Erreur réseau. Veuillez réessayer."));
+  };
+
+  window.submitAdjustOffer = function (rideId) {
+    const input = document.getElementById('inputNewOffer');
+    if (!input) return;
+    const fare = parseFloat(input.value);
+    if (!fare || fare < 300) {
+      alert("Veuillez saisir un montant valide (minimum 300 XAF).");
+      return;
+    }
+
+    fetch('/api/ride/' + rideId + '/negotiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fare: fare })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const form = document.getElementById('adjustOfferForm');
+          if (form) form.style.display = 'none';
+          const trackerContainer = document.querySelector('[data-active-ride-id]');
+          if (trackerContainer) checkStatus(rideId, trackerContainer);
+        } else {
+          alert(data.error || "Impossible de mettre à jour l'offre.");
+        }
+      })
+      .catch(() => alert("Erreur réseau."));
+  };
 
   window.MboaLiftTracker = {
     start: startLiveTracker

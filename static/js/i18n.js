@@ -589,6 +589,25 @@
       'Payment share :': 'Part des paiements :',
       'This week': 'Cette semaine',
       'Today': 'Aujourd\'hui',
+      'Marchandage à la Doualaise': 'Marchandage à la Doualaise',
+      'Douala Street Fare Bargaining': 'Marchandage à la Doualaise',
+      'Votre proposition de tarif :': 'Votre proposition de tarif :',
+      'Your proposed fare:': 'Votre proposition de tarif :',
+      'Prix standard': 'Prix standard',
+      'Standard fare': 'Prix standard',
+      'Offre négociée': 'Offre négociée',
+      'Negotiated offer': 'Offre négociée',
+      'Contre-proposer': 'Contre-proposer',
+      'Counter-offer': 'Contre-proposer',
+      'Accepter la contre-offre': 'Accepter la contre-offre',
+      'Accept counter-offer': 'Accepter la contre-offre',
+      'Refuser': 'Refuser',
+      'Decline': 'Refuser',
+      'Proposez votre prix directement au chauffeur (ex: Ndokoti, Deïdo, Akwa)': 'Proposez votre prix directement au chauffeur (ex: Ndokoti, Deïdo, Akwa)',
+      'Contre-offre reçue d\'un chauffeur !': 'Contre-offre reçue d\'un chauffeur !',
+      'Offre négociée en attente :': 'Offre négociée en attente :',
+      'Ajuster mon offre': 'Ajuster mon offre',
+      'Transmettre l\'offre': 'Transmettre l\'offre',
     },
 
     // French -> English (allows flawless switching back to English on French templates!)
@@ -1119,6 +1138,27 @@
       'Part des paiements :': 'Payment share :',
       'Cette semaine': 'This week',
       'Aujourd\'hui': 'Today',
+      'Marchandage à la Doualaise': 'Douala Street Fare Bargaining',
+      'Douala Street Fare Bargaining': 'Douala Street Fare Bargaining',
+      'Votre proposition de tarif :': 'Your proposed fare:',
+      'Your proposed fare:': 'Your proposed fare:',
+      'Prix standard': 'Standard fare',
+      'Standard fare': 'Standard fare',
+      'Offre négociée': 'Negotiated offer',
+      'Negotiated offer': 'Negotiated offer',
+      'Contre-proposer': 'Counter-offer',
+      'Counter-offer': 'Counter-offer',
+      'Accepter la contre-offre': 'Accept counter-offer',
+      'Accept counter-offer': 'Accept counter-offer',
+      'Refuser': 'Decline',
+      'Decline': 'Decline',
+      'Proposez votre prix directement au chauffeur (ex: Ndokoti, Deïdo, Akwa)': 'Bargain your fare directly with drivers (e.g. Ndokoti, Deïdo, Akwa)',
+      'Contre-offre reçue d\'un chauffeur !': 'Counter-offer received from a driver!',
+      'Offre négociée en attente :': 'Negotiated offer pending:',
+      'Ajuster mon offre': 'Adjust my offer',
+      'Transmettre l\'offre': 'Send offer',
+      'Prix standard calculé': 'Standard calculated fare',
+      'Offre prioritaire :': 'Priority offer:',
     }
   };
 
@@ -1161,6 +1201,7 @@
       out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)→(.+)/gi, 'Course urbaine Douala : $1 → $2');
       out = out.replace(/\bTransport mode adjustment\s*\((.+?)\)/gi, 'Ajustement mode de transport ($1)');
       out = out.replace(/\bNew ride available at\s*(.+?)\s*for\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Nouvelle course disponible à $1 pour $2 FCFA');
+      out = out.replace(/\bNegotiated offer received at\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Offre négociée reçue à $1 FCFA');
     } else {
       out = out.replace(/\bCourse n°\s*(\d+)\b/gi, 'Ride #$1');
       out = out.replace(/\bCourse #(\d+)\b/gi, 'Ride #$1');
@@ -1189,6 +1230,7 @@
       out = out.replace(/\bCourse urbaine Douala\s*:\s*(.+?)→(.+)/gi, 'Urban ride Douala : $1 → $2');
       out = out.replace(/\bAjustement mode de transport\s*\((.+?)\)/gi, 'Transport mode adjustment ($1)');
       out = out.replace(/\bNouvelle course disponible à\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New ride available at $1 for $2 FCFA');
+      out = out.replace(/\bOffre négociée reçue à\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Negotiated offer received at $1 FCFA');
     }
     return out;
   }

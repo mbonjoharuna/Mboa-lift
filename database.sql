@@ -69,11 +69,16 @@ CREATE TABLE IF NOT EXISTS rides (
     passengers INT NOT NULL DEFAULT 1,
     vehicle_type ENUM('bendskin', 'taxi', 'comfort') NOT NULL DEFAULT 'taxi',
     fare DECIMAL(10, 2) NOT NULL,
+    original_fare DECIMAL(10, 2) DEFAULT NULL,
+    negotiation_status ENUM('NONE', 'PROPOSED', 'ACCEPTED', 'COUNTERED', 'DECLINED') DEFAULT 'NONE',
+    driver_counter_fare DECIMAL(10, 2) DEFAULT NULL,
+    counter_driver_id INT DEFAULT NULL,
     status ENUM('PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')
         NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL
+    FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL,
+    FOREIGN KEY (counter_driver_id) REFERENCES drivers(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- =====================================================
