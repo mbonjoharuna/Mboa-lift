@@ -81,12 +81,35 @@ CREATE TABLE IF NOT EXISTS rides (
     scheduled_time DATETIME DEFAULT NULL,
     scheduled_type ENUM('standard', 'airport', 'port') NOT NULL DEFAULT 'standard',
     flight_or_shift_notes VARCHAR(150) DEFAULT NULL,
+    split_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    split_count INT NOT NULL DEFAULT 1,
+    split_fare_per_person DECIMAL(10, 2) DEFAULT NULL,
     status ENUM('PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')
         NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL,
     FOREIGN KEY (counter_driver_id) REFERENCES drivers(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- RIDE_SPLITS TABLE
+-- Stores individual passenger shares for carpool split-fare ("Partage de Frais")
+-- =====================================================
+CREATE TABLE IF NOT EXISTS ride_splits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ride_id INT NOT NULL,
+    passenger_index INT NOT NULL,
+    passenger_name VARCHAR(100) NOT NULL,
+    passenger_phone VARCHAR(20) DEFAULT NULL,
+    share_amount DECIMAL(10, 2) NOT NULL,
+    is_paid BOOLEAN NOT NULL DEFAULT FALSE,
+    payment_reference VARCHAR(100) DEFAULT NULL,
+    paid_at DATETIME DEFAULT NULL,
+    operator VARCHAR(20) DEFAULT NULL,
+    invite_token VARCHAR(64) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- =====================================================

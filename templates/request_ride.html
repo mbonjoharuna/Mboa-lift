@@ -227,6 +227,128 @@
                 <small id="paxNotice">Standard Taxi accepts up to 4 passengers. Bendskin accepts 1.</small>
             </div>
 
+            <!-- Carpool Split-Fare Engine ("Partage de Frais entre Passagers") -->
+            <div class="split-fare-section" id="splitFareSection">
+                <div class="split-fare-header">
+                    <div class="split-title-block">
+                        <span class="split-header-icon">👥</span>
+                        <div>
+                            <strong class="split-header-title">Partage de Frais entre Passagers ("Split-Fare Carpool")</strong>
+                            <span class="split-header-subtitle">Idéal pour collègues de Bonanjo, étudiants (ESSEC / Ndogbong) ou covoiturage du Pont du Wouri</span>
+                        </div>
+                    </div>
+                    <label class="switch-toggle" for="splitFareToggle" title="Activer la division équitable du tarif">
+                        <input type="checkbox" id="splitFareToggle" name="split_fare_toggle" value="1" {% if split_enabled %}checked{% endif %}>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Collapsible Split Config Body -->
+                <div class="split-fare-body" id="splitFareBody" style="{% if not split_enabled %}display:none;{% endif %}">
+                    <!-- Quick Presets -->
+                    <div class="split-presets-bar">
+                        <span class="split-presets-label">Profils types Douala :</span>
+                        <div class="split-preset-chips">
+                            <button type="button" class="split-preset-chip" data-count="3" data-pax2="Camarade ESSEC 1" data-pax3="Camarade ESSEC 2" data-pax4="">
+                                🎓 Étudiants Université (ESSEC / Ndogbong - 3 pers.)
+                            </button>
+                            <button type="button" class="split-preset-chip" data-count="4" data-pax2="Collègue Banque 1" data-pax3="Collègue Banque 2" data-pax4="Collègue Banque 3">
+                                💼 Collègues Bonanjo / Banques (4 pers.)
+                            </button>
+                            <button type="button" class="split-preset-chip" data-count="2" data-pax2="Voisin Bonabéri" data-pax3="" data-pax4="">
+                                🌉 Covoiturage Pont Wouri (2 pers.)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Split Count Selector -->
+                    <div class="split-count-selector">
+                        <label class="form-label-bold">Nombre total de personnes partageant les frais :</label>
+                        <input type="hidden" name="split_count" id="splitCountInput" value="{{ split_count or 2 }}">
+                        <div class="split-count-pills">
+                            <button type="button" class="split-count-pill {% if (split_count or 2) == 2 %}active{% endif %}" data-count="2">
+                                <strong>2 Personnes</strong>
+                                <small>50% chacun (-50%)</small>
+                            </button>
+                            <button type="button" class="split-count-pill {% if split_count == 3 %}active{% endif %}" data-count="3">
+                                <strong>3 Personnes</strong>
+                                <small>33.3% chacun (-67%)</small>
+                            </button>
+                            <button type="button" class="split-count-pill {% if split_count == 4 %}active{% endif %}" data-count="4">
+                                <strong>4 Personnes</strong>
+                                <small>25% chacun (-75%)</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Split Breakdown Callout -->
+                    <div class="split-calculation-card" id="splitCalculationCard">
+                        <div class="split-calc-math">
+                            <span class="calc-label">Tarif total :</span>
+                            <span class="calc-total" id="splitTotalDisplay">-</span>
+                            <span class="calc-operator">÷</span>
+                            <span class="calc-count" id="splitCountDisplay">2 pers.</span>
+                            <span class="calc-equals">=</span>
+                            <strong class="calc-result" id="splitPerPersonDisplay">- FCFA / personne</strong>
+                        </div>
+                        <div class="split-saving-badge">
+                            ✨ <span id="splitSavingText">Chaque passager économise 50% sur ce trajet !</span>
+                        </div>
+                    </div>
+
+                    <!-- Passenger Names & Phone Numbers Input Rows -->
+                    <div class="split-passengers-list" id="splitPassengersList">
+                        <div class="split-passenger-row creator-row">
+                            <div class="passenger-badge-number">1</div>
+                            <div class="passenger-inputs">
+                                <span class="passenger-role">Organisateur (Vous)</span>
+                                <strong>{{ user_name or 'Vous' }}</strong>
+                                <small>Reçoit les fonds MoMo/OM ou avance le trajet</small>
+                            </div>
+                            <span class="passenger-share-pill" id="sharePill1">- XAF</span>
+                        </div>
+
+                        <div class="split-passenger-row" id="paxRow2">
+                            <div class="passenger-badge-number">2</div>
+                            <div class="passenger-inputs">
+                                <label for="copaxName2">Nom du passager 2 :</label>
+                                <input type="text" id="copaxName2" name="copax_name_2" value="{{ copax_name_2 or '' }}" placeholder="Ex: Marc Ndongo, Collègue Ecobank..." class="form-input-sm">
+                                <input type="tel" id="copaxPhone2" name="copax_phone_2" value="{{ copax_phone_2 or '' }}" placeholder="Tél (ex: 671234567) pour invite WhatsApp" class="form-input-sm">
+                            </div>
+                            <span class="passenger-share-pill" id="sharePill2">- XAF</span>
+                        </div>
+
+                        <div class="split-passenger-row" id="paxRow3" style="{% if (split_count or 2) < 3 %}display:none;{% endif %}">
+                            <div class="passenger-badge-number">3</div>
+                            <div class="passenger-inputs">
+                                <label for="copaxName3">Nom du passager 3 :</label>
+                                <input type="text" id="copaxName3" name="copax_name_3" value="{{ copax_name_3 or '' }}" placeholder="Ex: Sandrine, ESSEC Ange Raphaël..." class="form-input-sm">
+                                <input type="tel" id="copaxPhone3" name="copax_phone_3" value="{{ copax_phone_3 or '' }}" placeholder="Tél (ex: 691234567)" class="form-input-sm">
+                            </div>
+                            <span class="passenger-share-pill" id="sharePill3">- XAF</span>
+                        </div>
+
+                        <div class="split-passenger-row" id="paxRow4" style="{% if (split_count or 2) < 4 %}display:none;{% endif %}">
+                            <div class="passenger-badge-number">4</div>
+                            <div class="passenger-inputs">
+                                <label for="copaxName4">Nom du passager 4 :</label>
+                                <input type="text" id="copaxName4" name="copax_name_4" value="{{ copax_name_4 or '' }}" placeholder="Ex: Alain, Direction Port Bonanjo..." class="form-input-sm">
+                                <input type="tel" id="copaxPhone4" name="copax_phone_4" value="{{ copax_phone_4 or '' }}" placeholder="Tél (ex: 677889900)" class="form-input-sm">
+                            </div>
+                            <span class="passenger-share-pill" id="sharePill4">- XAF</span>
+                        </div>
+                    </div>
+
+                    <div class="split-notice-box">
+                        <span class="split-notice-icon">💬</span>
+                        <div class="split-notice-text">
+                            <strong>Génération automatique après validation :</strong>
+                            <p>Vous obtiendrez des liens individuels de paiement direct par WhatsApp et les syntaxes USSD prêtes à composer (*126*... et *150*...) pour chaque participant.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Market Cargo & Heavy Luggage Option ("Option Marché & Gros Colis") -->
             <div class="cargo-option-section" id="cargoOptionSection">
                 <div class="cargo-section-header">

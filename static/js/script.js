@@ -100,6 +100,9 @@ function initFareCalculator() {
         let clamped = Math.max(minFare, Math.min(maxFare, Math.round(amount)));
         negotiatedFareInput.value = clamped;
         updateNegotiationUI();
+        if (window.refreshSplitMath) {
+            window.refreshSplitMath(clamped);
+        }
     }
 
     if (btnFareMinus100) {
@@ -343,6 +346,153 @@ function initFareCalculator() {
     window.addEventListener("languageChanged", function() {
         if (fareBox.style.display !== "none") updateFare();
     });
+
+    initSplitFareEngine();
+}
+
+// ---------- Carpool Split-Fare Engine ("Partage de Frais entre Passagers") ----------
+function initSplitFareEngine() {
+    const splitSection = document.getElementById("splitFareSection");
+    if (!splitSection) return;
+
+    const toggle = document.getElementById("splitFareToggle");
+    const body = document.getElementById("splitFareBody");
+    const countInput = document.getElementById("splitCountInput");
+    const countPills = document.querySelectorAll(".split-count-pill");
+    const presetChips = document.querySelectorAll(".split-preset-chip");
+    const paxRow3 = document.getElementById("paxRow3");
+    const paxRow4 = document.getElementById("paxRow4");
+    const totalDisplay = document.getElementById("splitTotalDisplay");
+    const countDisplay = document.getElementById("splitCountDisplay");
+    const perPersonDisplay = document.getElementById("splitPerPersonDisplay");
+    const savingText = document.getElementById("splitSavingText");
+    const sharePill1 = document.getElementById("sharePill1");
+    const sharePill2 = document.getElementById("sharePill2");
+    const sharePill3 = document.getElementById("sharePill3");
+    const sharePill4 = document.getElementById("sharePill4");
+
+    const copaxName2 = document.getElementById("copaxName2");
+    const copaxName3 = document.getElementById("copaxName3");
+    const copaxName4 = document.getElementById("copaxName4");
+    const passengersInput = document.getElementById("passengers");
+
+    let activeSplitFare = 0;
+
+    function formatNumber(num) {
+        return Math.round(Number(num) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function setCount(count) {
+        count = Math.max(2, Math.min(4, parseInt(count, 10) || 2));
+        if (countInput) countInput.value = count;
+
+        countPills.forEach(pill => {
+            const c = parseInt(pill.getAttribute("data-count"), 10);
+            if (c === count) pill.classList.add("active");
+            else pill.classList.remove("active");
+        });
+
+        if (paxRow3) paxRow3.style.display = (count >= 3) ? "flex" : "none";
+        if (paxRow4) paxRow4.style.display = (count >= 4) ? "flex" : "none";
+
+        if (passengersInput && parseInt(passengersInput.value, 10) < count) {
+            passengersInput.value = count;
+        }
+
+        refreshMath(activeSplitFare);
+    }
+
+    function refreshMath(fare) {
+        if (fare !== undefined && fare !== null) activeSplitFare = fare;
+        const total = Math.round(Number(activeSplitFare) || 0);
+        const count = countInput ? parseInt(countInput.value, 10) || 2 : 2;
+
+        if (total <= 0) {
+            if (totalDisplay) totalDisplay.textContent = "-";
+            if (countDisplay) countDisplay.textContent = count + " pers.";
+            if (perPersonDisplay) perPersonDisplay.textContent = "- FCFA / personne";
+            if (sharePill1) sharePill1.textContent = "- XAF";
+            if (sharePill2) sharePill2.textContent = "- XAF";
+            if (sharePill3) sharePill3.textContent = "- XAF";
+            if (sharePill4) sharePill4.textContent = "- XAF";
+            return;
+        }
+
+        const perPerson = Math.round(total / count);
+        const p1Share = total - (perPerson * (count - 1));
+        const savingPct = Math.round(((count - 1) / count) * 100);
+
+        if (totalDisplay) totalDisplay.textContent = formatNumber(total) + " FCFA";
+        if (countDisplay) countDisplay.textContent = count + " pers.";
+        if (perPersonDisplay) perPersonDisplay.textContent = formatNumber(perPerson) + " FCFA / personne";
+        if (savingText) {
+            const tpl = _t("Chaque passager économise {pct}% sur ce trajet !");
+            savingText.textContent = tpl.replace("{pct}", savingPct);
+        }
+
+        if (sharePill1) sharePill1.textContent = formatNumber(p1Share) + " XAF";
+        if (sharePill2) sharePill2.textContent = formatNumber(perPerson) + " XAF";
+        if (sharePill3) sharePill3.textContent = (count >= 3) ? formatNumber(perPerson) + " XAF" : "-";
+        if (sharePill4) sharePill4.textContent = (count >= 4) ? formatNumber(perPerson) + " XAF" : "-";
+    }
+
+    window.refreshSplitMath = refreshMath;
+
+    if (toggle && body) {
+        toggle.addEventListener("change", function () {
+            if (this.checked) {
+                body.style.display = "block";
+                // Enforce non-bendskin vehicle
+                const bendskinRadio = document.querySelector('input[name="vehicle_type"][value="bendskin"]');
+                if (bendskinRadio && bendskinRadio.checked) {
+                    const taxiRadio = document.querySelector('input[name="vehicle_type"][value="taxi"]');
+                    if (taxiRadio) {
+                        taxiRadio.checked = true;
+                        taxiRadio.dispatchEvent(new Event("change"));
+                    }
+                }
+                const count = countInput ? parseInt(countInput.value, 10) || 2 : 2;
+                if (passengersInput && parseInt(passengersInput.value, 10) < count) {
+                    passengersInput.value = count;
+                }
+                refreshMath(activeSplitFare);
+            } else {
+                body.style.display = "none";
+            }
+        });
+    }
+
+    countPills.forEach(pill => {
+        pill.addEventListener("click", function () {
+            const count = parseInt(this.getAttribute("data-count"), 10);
+            setCount(count);
+        });
+    });
+
+    presetChips.forEach(chip => {
+        chip.addEventListener("click", function () {
+            const count = parseInt(this.getAttribute("data-count"), 10) || 2;
+            const p2 = this.getAttribute("data-pax2") || "";
+            const p3 = this.getAttribute("data-pax3") || "";
+            const p4 = this.getAttribute("data-pax4") || "";
+
+            setCount(count);
+
+            if (copaxName2 && p2) copaxName2.value = p2;
+            if (copaxName3 && p3) copaxName3.value = p3;
+            if (copaxName4 && p4) copaxName4.value = p4;
+
+            presetChips.forEach(c => c.classList.remove("active"));
+            this.classList.add("active");
+        });
+    });
+
+    // Initial check
+    if (toggle && toggle.checked) {
+        if (body) body.style.display = "block";
+        const initialCount = countInput ? parseInt(countInput.value, 10) || 2 : 2;
+        setCount(initialCount);
+    }
 }
 
 // ---------- Scheduled Early-Morning Airport & Port Shuttles ----------

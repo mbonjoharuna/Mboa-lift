@@ -11,9 +11,12 @@ This file contains:
 """
 
 import os
+import re
+import secrets
 from functools import wraps
 from datetime import datetime, timedelta
 import hashlib
+from urllib.parse import quote
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -222,6 +225,75 @@ DOUALA_MARKETS = [
     {"name": "Marché Deido", "zone": "Deido", "desc": "Vivres et poissons frais du fleuve Wouri", "keywords": ["deido", "déïdo"]},
     {"name": "Marché Bonabéri", "zone": "Bonabéri", "desc": "Hub vivriers en provenance du Moungo", "keywords": ["bonabéri", "bonaberi"]},
 ]
+
+
+def generate_split_ussd_codes(recipient_phone, amount):
+    """
+    Generate Cameroon MTN Mobile Money and Orange Money USSD dialing strings.
+    - MTN MoMo: *126*9*{phone}*{amount}#
+    - Orange Money: *150*1*1*{phone}*{amount}#
+    """
+    clean = re.sub(r"[^\d]", "", recipient_phone or "")
+    if clean.startswith("237") and len(clean) > 9:
+        clean = clean[3:]
+    amt = int(round(amount))
+    if clean:
+        momo_raw = f"*126*9*{clean}*{amt}#"
+        momo_dial = f"tel:*126*9*{clean}*{amt}%23"
+        om_raw = f"*150*1*1*{clean}*{amt}#"
+        om_dial = f"tel:*150*1*1*{clean}*{amt}%23"
+    else:
+        momo_raw = f"*126*9# ({amt} XAF)"
+        momo_dial = "tel:*126*9%23"
+        om_raw = f"*150*1*1# ({amt} XAF)"
+        om_dial = "tel:*150*1*1%23"
+    return {
+        "momo_raw": momo_raw,
+        "momo_dial": momo_dial,
+        "om_raw": om_raw,
+        "om_dial": om_dial,
+        "amount": amt,
+        "phone": clean
+    }
+
+
+def generate_split_whatsapp_link(passenger_name, share_amount, pickup, destination, invite_token, organizer_name, passenger_phone=None):
+    """
+    Generate an individual WhatsApp share link with pre-formatted message
+    containing the direct payment URL and USSD codes.
+    """
+    try:
+        host = request.host_url.rstrip("/") if request else "http://localhost:5000"
+    except Exception:
+        host = "http://localhost:5000"
+    pay_url = f"{host}/split-pay/{invite_token}"
+    amt_fmt = f"{int(round(share_amount)):,}".replace(",", " ")
+
+    msg = (
+        f"🇨🇲 *MboaLift Douala - Partage de Taxi / Covoiturage*\n"
+        f"Bonjour {passenger_name} ! {organizer_name} a réservé notre trajet partagé :\n"
+        f"📍 *Trajet* : {pickup} ➔ {destination}\n"
+        f"💰 *Ta part* : *{amt_fmt} FCFA*\n\n"
+        f"👉 *Payer en 1 clic (MTN MoMo / Orange Money) :*\n{pay_url}\n\n"
+        f"Ou règle directement par syntaxe USSD :\n"
+        f"• MTN MoMo : *126*9*...#{amt_fmt}\n"
+        f"• Orange Money : *150*1*1*...#{amt_fmt}\n\n"
+        f"Merci et bon trajet ensemble dans Douala ! 🚗💨"
+    )
+
+    clean = re.sub(r"[^\d]", "", passenger_phone or "")
+    if clean.startswith("237") and len(clean) > 9:
+        wa_target = clean
+    elif len(clean) == 9 and clean.startswith("6"):
+        wa_target = f"237{clean}"
+    else:
+        wa_target = None
+
+    if wa_target:
+        return f"https://api.whatsapp.com/send?phone={wa_target}&text={quote(msg)}"
+    else:
+        return f"https://api.whatsapp.com/send?text={quote(msg)}"
+
 
 
 @app.before_request
@@ -720,6 +792,38 @@ def init_db_schema():
         if not cur.fetchone():
             cur.execute("ALTER TABLE rides ADD COLUMN flight_or_shift_notes VARCHAR(150) DEFAULT NULL AFTER scheduled_type")
 
+        # Split-Fare Engine columns on rides
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'split_enabled'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN split_enabled BOOLEAN NOT NULL DEFAULT FALSE AFTER flight_or_shift_notes")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'split_count'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN split_count INT NOT NULL DEFAULT 1 AFTER split_enabled")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'split_fare_per_person'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN split_fare_per_person DECIMAL(10, 2) DEFAULT NULL AFTER split_count")
+
+        # ride_splits table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS ride_splits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                ride_id INT NOT NULL,
+                passenger_index INT NOT NULL,
+                passenger_name VARCHAR(100) NOT NULL,
+                passenger_phone VARCHAR(20) DEFAULT NULL,
+                share_amount DECIMAL(10, 2) NOT NULL,
+                is_paid BOOLEAN NOT NULL DEFAULT FALSE,
+                payment_reference VARCHAR(100) DEFAULT NULL,
+                paid_at DATETIME DEFAULT NULL,
+                operator VARCHAR(20) DEFAULT NULL,
+                invite_token VARCHAR(64) UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
+        """)
+
         conn.commit()
         cur.close()
     except Exception as e:
@@ -910,6 +1014,7 @@ def login():
                 session.clear()
                 session["user_id"] = user["id"]
                 session["user_name"] = user["full_name"]
+                session["user_phone"] = user.get("phone", "")
                 flash(f"Welcome back, {user['full_name']}!", "success")
                 return redirect(url_for("dashboard"))
             else:
@@ -1754,6 +1859,7 @@ def dashboard():
                 """
                 SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
                        r.driver_counter_fare, r.counter_driver_id, r.cargo_type, r.cargo_fee, r.status, r.vehicle_type, r.created_at,
+                       r.split_enabled, r.split_count, r.split_fare_per_person,
                        d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info, d.current_location AS driver_location,
                        cd.full_name AS counter_driver_name, cd.phone AS counter_driver_phone, cd.vehicle_info AS counter_driver_vehicle
                 FROM rides r
@@ -1772,6 +1878,38 @@ def dashboard():
                     (active_ride["id"], user_id)
                 )
                 active_ride["is_paid"] = bool(cur.fetchone())
+
+                if active_ride.get("split_enabled"):
+                    cur.execute(
+                        """
+                        SELECT id, passenger_index, passenger_name, passenger_phone, share_amount,
+                               is_paid, payment_reference, operator, invite_token
+                        FROM ride_splits
+                        WHERE ride_id = %s
+                        ORDER BY passenger_index ASC
+                        """,
+                        (active_ride["id"],)
+                    )
+                    splits = cur.fetchall()
+                    cur.execute("SELECT phone, full_name FROM users WHERE id = %s", (user_id,))
+                    u_row = cur.fetchone() or {}
+                    organizer_phone = u_row.get("phone", "")
+                    organizer_name = u_row.get("full_name", session.get("user_name", "Organisateur"))
+
+                    for s in splits:
+                        s["ussd"] = generate_split_ussd_codes(organizer_phone, s["share_amount"])
+                        s["whatsapp_url"] = generate_split_whatsapp_link(
+                            passenger_name=s["passenger_name"],
+                            share_amount=s["share_amount"],
+                            pickup=active_ride["pickup"],
+                            destination=active_ride["destination"],
+                            invite_token=s["invite_token"],
+                            organizer_name=organizer_name,
+                            passenger_phone=s["passenger_phone"]
+                        )
+                    active_ride["splits"] = splits
+                    active_ride["split_paid_count"] = sum(1 for s in splits if s["is_paid"])
+                    active_ride["all_splits_paid"] = (active_ride["split_paid_count"] == len(splits))
 
             # Counts
             cur.execute(
@@ -1985,6 +2123,17 @@ def request_ride():
                 if scheduled_type not in ("standard", "airport", "port"):
                     scheduled_type = "standard"
 
+        # Carpool Split-Fare Engine ("Partage de Frais entre Passagers")
+        split_fare_toggle = (request.form.get("split_fare_toggle") == "1")
+        split_count = 1
+        if split_fare_toggle:
+            try:
+                split_count = int(request.form.get("split_count", 2))
+                if split_count < 2 or split_count > 4:
+                    split_count = 2
+            except (ValueError, TypeError):
+                split_count = 2
+
         def _reload_form():
             return render_template(
                 "request_ride.html",
@@ -2002,6 +2151,14 @@ def request_ride():
                 selected_scheduled_time=request.form.get("scheduled_time", ""),
                 selected_flight_notes=flight_or_shift_notes,
                 selected_scheduled_type=scheduled_type,
+                split_enabled=split_fare_toggle,
+                split_count=split_count,
+                copax_name_2=request.form.get("copax_name_2", ""),
+                copax_phone_2=request.form.get("copax_phone_2", ""),
+                copax_name_3=request.form.get("copax_name_3", ""),
+                copax_phone_3=request.form.get("copax_phone_3", ""),
+                copax_name_4=request.form.get("copax_name_4", ""),
+                copax_phone_4=request.form.get("copax_phone_4", ""),
             )
 
         if not pickup or not destination:
@@ -2017,8 +2174,15 @@ def request_ride():
             if passengers < 1 or passengers > 4:
                 raise ValueError
         except ValueError:
-            flash("Number of passengers must be between 1 and 4.", "danger")
-            return _reload_form()
+            passengers = split_count if split_fare_toggle else 1
+
+        # Carpool split-fare requires at least split_count passengers and cannot use bendskin moto
+        if split_fare_toggle:
+            if vehicle_type == "bendskin":
+                vehicle_type = "taxi"
+                flash("Le moto-taxi Bendskin est strictement individuel. Votre course partagée a été configurée en Taxi Jaune collectif.", "info")
+            if passengers < split_count:
+                passengers = split_count
 
         # Enforce passenger limit for bendskin moto-taxi
         if vehicle_type == "bendskin" and passengers > 1:
@@ -2050,6 +2214,13 @@ def request_ride():
             except (ValueError, TypeError):
                 pass
 
+        split_enabled = split_fare_toggle
+        split_fare_per_person = None
+        p1_share = fare
+        if split_enabled:
+            split_fare_per_person = int(round(fare / split_count))
+            p1_share = int(round(fare)) - (split_fare_per_person * (split_count - 1))
+
         driver_id = None
         if preferred_driver:
             try:
@@ -2067,6 +2238,7 @@ def request_ride():
 
             # If passenger chose a specific free driver, assign immediately
             assigned = False
+            ride_id = None
             if driver_id:
                 cur.execute(
                     """SELECT id FROM drivers
@@ -2077,11 +2249,14 @@ def request_ride():
                     cur.execute(
                         """INSERT INTO rides
                            (user_id, driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
-                            fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes, status)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
+                            fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes,
+                            split_enabled, split_count, split_fare_per_person, status)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
                         (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
-                         fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes)
+                         fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes,
+                         split_enabled, split_count, split_fare_per_person)
                     )
+                    ride_id = cur.lastrowid
                     if not is_scheduled:
                         cur.execute(
                             "UPDATE drivers SET availability = 'busy' WHERE id = %s",
@@ -2113,11 +2288,14 @@ def request_ride():
                 cur.execute(
                     """INSERT INTO rides
                        (user_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
-                        fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
+                        fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes,
+                        split_enabled, split_count, split_fare_per_person, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
                     (session["user_id"], pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
-                     fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes)
+                     fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes,
+                     split_enabled, split_count, split_fare_per_person)
                 )
+                ride_id = cur.lastrowid
                 if is_scheduled and scheduled_time:
                     st_fmt = scheduled_time.strftime("%d/%m/%Y à %H:%M")
                     label_type = "Navette Aéroport DLA" if scheduled_type == "airport" else ("Navette Port de Douala" if scheduled_type == "port" else "Course planifiée")
@@ -2137,6 +2315,38 @@ def request_ride():
                         f"Estimated fare: {int(round(fare))} XAF. Waiting for a driver to accept.",
                         "success"
                     )
+
+            if split_enabled and ride_id:
+                cur.execute("SELECT full_name, phone FROM users WHERE id = %s", (session["user_id"],))
+                organizer_user = cur.fetchone() or {"full_name": session.get("user_name", "Organisateur"), "phone": ""}
+
+                p1_token = secrets.token_hex(16)
+                cur.execute(
+                    """
+                    INSERT INTO ride_splits
+                    (ride_id, passenger_index, passenger_name, passenger_phone, share_amount, is_paid, invite_token)
+                    VALUES (%s, 1, %s, %s, %s, FALSE, %s)
+                    """,
+                    (ride_id, organizer_user["full_name"], organizer_user["phone"], p1_share, p1_token)
+                )
+
+                for p_idx in range(2, split_count + 1):
+                    c_name = request.form.get(f"copax_name_{p_idx}", "").strip() or f"Passager {p_idx}"
+                    c_phone = request.form.get(f"copax_phone_{p_idx}", "").strip()
+                    p_tok = secrets.token_hex(16)
+                    cur.execute(
+                        """
+                        INSERT INTO ride_splits
+                        (ride_id, passenger_index, passenger_name, passenger_phone, share_amount, is_paid, invite_token)
+                        VALUES (%s, %s, %s, %s, %s, FALSE, %s)
+                        """,
+                        (ride_id, p_idx, c_name, c_phone, split_fare_per_person, p_tok)
+                    )
+
+                flash(
+                    f"👥 Covoiturage activé ({split_count} personnes) ! Tarif total : {int(round(fare))} XAF ({split_fare_per_person} XAF/personne). Liens WhatsApp et syntaxes USSD prêts sur votre tableau de bord !",
+                    "info"
+                )
 
             conn.commit()
             cur.close()
@@ -2820,6 +3030,187 @@ def payments():
         finally:
             conn.close()
     return render_template("payments.html", payments=payment_list)
+
+
+# ============================================================
+# CARPOOL SPLIT-FARE DIRECT PAYMENT ROUTE (Co-Passengers)
+# ============================================================
+@app.route("/split-pay/<token>", methods=["GET", "POST"])
+def split_pay(token):
+    """
+    Public co-passenger payment portal for split-fare carpooling.
+    Allows co-passengers to pay their individual share via MTN MoMo,
+    Orange Money, or USSD strings without requiring a full account.
+    """
+    conn = get_db()
+    if not conn:
+        flash("Erreur de base de données. Veuillez réessayer.", "danger")
+        return redirect(url_for("home"))
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """
+            SELECT s.*, r.pickup, r.destination, r.fare AS total_fare, r.vehicle_type, r.status AS ride_status,
+                   r.split_count, r.user_id AS organizer_id, u.full_name AS organizer_name, u.phone AS organizer_phone
+            FROM ride_splits s
+            JOIN rides r ON s.ride_id = r.id
+            JOIN users u ON r.user_id = u.id
+            WHERE s.invite_token = %s
+            """,
+            (token,)
+        )
+        split = cur.fetchone()
+        if not split:
+            flash("Lien de paiement de covoiturage introuvable ou expiré.", "warning")
+            return redirect(url_for("home"))
+
+        # Fetch all splits for this ride to show group progress
+        cur.execute(
+            """
+            SELECT passenger_index, passenger_name, passenger_phone, share_amount, is_paid, operator,
+                   DATE_FORMAT(paid_at, '%d/%m/%Y à %H:%i') AS paid_at_fmt
+            FROM ride_splits
+            WHERE ride_id = %s
+            ORDER BY passenger_index ASC
+            """,
+            (split["ride_id"],)
+        )
+        all_splits = cur.fetchall()
+        paid_count = sum(1 for s in all_splits if s["is_paid"])
+
+        if request.method == "POST":
+            if split["is_paid"]:
+                flash("Cette part de course a déjà été réglée !", "info")
+                return redirect(url_for("split_pay", token=token))
+
+            operator = request.form.get("operator", "MTN").strip().upper()
+            if operator not in ("MTN", "ORANGE"):
+                operator = "MTN"
+            phone = request.form.get("phone", "").strip()
+
+            clean_digits = re.sub(r"[^\d]", "", phone)
+            if len(clean_digits) == 9 and clean_digits.startswith("6"):
+                pass
+            elif len(clean_digits) == 12 and clean_digits.startswith("2376"):
+                clean_digits = clean_digits[3:]
+            else:
+                flash("Veuillez saisir un numéro MTN ou Orange Money valide à 9 chiffres (ex: 671234567 ou 691234567).", "danger")
+                ussd = generate_split_ussd_codes(split["organizer_phone"], split["share_amount"])
+                return render_template(
+                    "split_pay.html",
+                    split=split,
+                    all_splits=all_splits,
+                    paid_count=paid_count,
+                    ussd=ussd
+                )
+
+            import random
+            txn_ref = f"{operator}-SPLIT-2026-{random.randint(100000, 999999)}"
+            cur.execute(
+                """
+                UPDATE ride_splits
+                SET is_paid = TRUE, payment_reference = %s, paid_at = NOW(), operator = %s, passenger_phone = %s
+                WHERE id = %s
+                """,
+                (txn_ref, operator, clean_digits, split["id"])
+            )
+            conn.commit()
+
+            # Check if all splits for this ride are now paid
+            cur.execute(
+                "SELECT COUNT(*) AS unpaid FROM ride_splits WHERE ride_id = %s AND is_paid = FALSE",
+                (split["ride_id"],)
+            )
+            unpaid_row = cur.fetchone()
+            if unpaid_row and unpaid_row["unpaid"] == 0:
+                cur.execute(
+                    "SELECT id FROM payments WHERE ride_id = %s AND status = 'SUCCESSFUL'",
+                    (split["ride_id"],)
+                )
+                if not cur.fetchone():
+                    cur.execute(
+                        """
+                        INSERT INTO payments
+                        (ride_id, user_id, transaction_reference, amount, phone, operator, status, gateway_response)
+                        VALUES (%s, %s, %s, %s, %s, %s, 'SUCCESSFUL', 'All carpool co-passengers settled their individual shares')
+                        """,
+                        (
+                            split["ride_id"],
+                            split["organizer_id"],
+                            f"SPLIT-ALL-{split['ride_id']}-{random.randint(1000, 9999)}",
+                            split["total_fare"],
+                            split["organizer_phone"],
+                            "MOMO/OM SPLIT"
+                        )
+                    )
+                    conn.commit()
+
+            flash(
+                f"✅ Part de {int(round(split['share_amount']))} FCFA réglée avec succès via {operator} Money ! Réf: {txn_ref}",
+                "success"
+            )
+            return redirect(url_for("split_pay", token=token))
+
+        ussd = generate_split_ussd_codes(split["organizer_phone"], split["share_amount"])
+        return render_template(
+            "split_pay.html",
+            split=split,
+            all_splits=all_splits,
+            paid_count=paid_count,
+            ussd=ussd
+        )
+    except Error as e:
+        flash(f"Erreur lors du traitement du paiement partagé : {str(e)}", "danger")
+        return redirect(url_for("home"))
+    finally:
+        conn.close()
+
+
+@app.route("/api/ride/<int:ride_id>/split-status")
+def api_ride_split_status(ride_id):
+    """JSON endpoint for real-time polling of ride split payments."""
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database error"}), 500
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """SELECT id, fare, split_enabled, split_count, split_fare_per_person
+               FROM rides WHERE id = %s""",
+            (ride_id,)
+        )
+        ride = cur.fetchone()
+        if not ride or not ride["split_enabled"]:
+            return jsonify({"split_enabled": False})
+
+        cur.execute(
+            """
+            SELECT id, passenger_index, passenger_name, passenger_phone, share_amount,
+                   is_paid, payment_reference, operator, invite_token,
+                   DATE_FORMAT(paid_at, '%d/%m/%Y à %H:%i') AS paid_at_formatted
+            FROM ride_splits
+            WHERE ride_id = %s
+            ORDER BY passenger_index ASC
+            """,
+            (ride_id,)
+        )
+        splits = cur.fetchall()
+        paid_count = sum(1 for s in splits if s["is_paid"])
+        return jsonify({
+            "split_enabled": True,
+            "ride_id": ride_id,
+            "split_count": ride["split_count"],
+            "total_fare": float(ride["fare"]),
+            "per_person": float(ride["split_fare_per_person"] or 0),
+            "paid_count": paid_count,
+            "all_paid": (paid_count == len(splits)),
+            "splits": splits
+        })
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 # ============================================================

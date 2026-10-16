@@ -279,6 +279,94 @@
         {% endif %}
     </div>
 
+    {% if active_ride.split_enabled %}
+    <!-- Carpool Split-Fare Progress Card ("Partage de Frais entre Passagers") -->
+    <div class="tracker-split-card" id="trackerSplitCard" style="margin-bottom:16px;padding:16px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;text-align:left;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.6rem;background:#e0f2fe;padding:6px;border-radius:8px;">👥</span>
+                <div style="text-align:left;">
+                    <strong style="font-size:1rem;color:#0f172a;display:block;">Partage de Frais entre Passagers ({{ active_ride.split_count }} pers.)</strong>
+                    <span style="font-size:0.85rem;color:#475569;">
+                        {{ "%.0f"|format(active_ride.split_fare_per_person or (active_ride.fare / active_ride.split_count)) }} FCFA / personne • Total : {{ "%.0f"|format(active_ride.fare) }} FCFA
+                    </span>
+                </div>
+            </div>
+            <div style="background:#e2e8f0;padding:4px 10px;border-radius:20px;font-size:0.85rem;font-weight:700;color:#1e293b;" id="splitSummaryBadge">
+                <span id="splitPaidCountDisplay">{{ active_ride.split_paid_count or 0 }}</span> / {{ active_ride.split_count }} part(s) réglée(s)
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-bottom:14px;">
+            <div id="splitProgressBar" style="height:100%;width:{% if active_ride.split_count %}{{ ((active_ride.split_paid_count or 0) / active_ride.split_count * 100)|round }}{% else %}0{% endif %}%;background:#16a34a;transition:width 0.4s ease;"></div>
+        </div>
+
+        <!-- Co-Passengers List -->
+        <div class="split-pax-grid" id="splitPaxGrid" style="display:flex;flex-direction:column;gap:8px;">
+            {% for s in active_ride.splits %}
+            <div class="split-pax-row" id="splitPaxRow{{ s.id }}" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;text-align:left;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="width:26px;height:26px;border-radius:50%;background:#e2e8f0;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:#334155;">
+                        {{ s.passenger_index }}
+                    </span>
+                    <div style="text-align:left;">
+                        <strong style="font-size:0.9rem;color:#0f172a;">
+                            {{ s.passenger_name }} {% if s.passenger_index == 1 %}<span style="font-size:0.75rem;background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:4px;font-weight:600;">Organisateur</span>{% endif %}
+                        </strong>
+                        <div style="font-size:0.8rem;color:#64748b;display:flex;align-items:center;gap:8px;margin-top:2px;">
+                            <span>{{ "%.0f"|format(s.share_amount) }} XAF</span>
+                            {% if s.passenger_phone %}<span>• 📞 {{ s.passenger_phone }}</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    {% if s.is_paid %}
+                        <span style="background:#dcfce7;color:#166534;font-size:0.8rem;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid #86efac;">
+                            ✅ Payé ({{ s.operator or 'MoMo' }})
+                        </span>
+                    {% else %}
+                        <span style="background:#fef9c3;color:#854d0e;font-size:0.8rem;font-weight:600;padding:4px 8px;border-radius:6px;border:1px solid #fde047;">
+                            ⏳ En attente
+                        </span>
+                        {% if s.passenger_index == 1 %}
+                            <a href="{{ url_for('split_pay', token=s.invite_token) }}" class="btn-primary btn-sm" style="padding:4px 10px;font-size:0.8rem;">
+                                💳 Payer ma part
+                            </a>
+                        {% else %}
+                            <a href="{{ s.whatsapp_url }}" target="_blank" class="btn-safety btn-sm" style="background:#25d366;color:#fff;border-color:#22c55e;padding:4px 10px;font-size:0.8rem;" title="Envoyer le lien WhatsApp">
+                                💬 WhatsApp
+                            </a>
+                            <button type="button" class="btn-outline btn-sm" onclick="var b=document.getElementById('ussdBox{{ s.id }}'); if(b) b.style.display=(b.style.display==='none'||!b.style.display)?'block':'none';" style="padding:4px 8px;font-size:0.8rem;" title="Syntaxes USSD">
+                                📲 USSD
+                            </button>
+                            <button type="button" class="btn-outline btn-sm" onclick="copySplitLink('{{ request.host_url.rstrip('/') }}/split-pay/{{ s.invite_token }}', this)" style="padding:4px 8px;font-size:0.8rem;" title="Copier le lien direct">
+                                🔗 Lien
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                {% if not s.is_paid and s.passenger_index > 1 %}
+                <!-- Collapsible USSD details -->
+                <div id="ussdBox{{ s.id }}" style="display:none;width:100%;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:4px;font-size:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span>🟡 MTN MoMo : <code>{{ s.ussd.momo_raw }}</code></span>
+                        <a href="{{ s.ussd.momo_dial }}" class="btn-primary btn-sm" style="font-size:0.75rem;padding:2px 8px;">Composer</a>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>🟠 Orange Money : <code>{{ s.ussd.om_raw }}</code></span>
+                        <a href="{{ s.ussd.om_dial }}" class="btn-primary btn-sm" style="font-size:0.75rem;padding:2px 8px;">Composer</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Live Action Buttons -->
     <div class="tracker-actions">
         <a href="https://wa.me/?text=Je%20suis%20en%20trajet%20MboaLift%20(Course%20%23{{ active_ride.id }})%20de%20{{ active_ride.pickup }}%20%C3%A0%20{{ active_ride.destination }}%20avec%20le%20chauffeur%20{{ active_ride.driver_name or 'assign%C3%A9' }}%20(Tel:%20{{ active_ride.driver_phone or '-' }}).%20Suivi%20de%20s%C3%A9curit%C3%A9%20Douala."
@@ -407,4 +495,28 @@
     <a href="{{ url_for('payments') }}" class="btn-outline">Payment History</a>
     <a href="{{ url_for('ai_assistant') }}" class="btn-outline">Ask AI Assistant</a>
 </div>
+
+<script>
+function copySplitLink(url, btn) {
+    if (!navigator.clipboard) {
+        var textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+    } else {
+        navigator.clipboard.writeText(url);
+    }
+    var oldText = btn.innerHTML;
+    btn.innerHTML = "✅ Copié !";
+    btn.style.color = "#16a34a";
+    btn.style.borderColor = "#16a34a";
+    setTimeout(function() {
+        btn.innerHTML = oldText;
+        btn.style.color = "";
+        btn.style.borderColor = "";
+    }, 2000);
+}
+</script>
 {% endblock %}

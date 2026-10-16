@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement de Part Covoiturage | MboaLift Douala{% endblock %}
+
+{% block content %}
+<div class="split-pay-container" style="max-width: 760px; margin: 30px auto; padding: 0 15px; text-align: left;">
+    <!-- Breadcrumb / Header -->
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('index') }}" class="btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            ← Retour à l'accueil MboaLift
+        </a>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card" style="padding: 24px 28px; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.06); text-align: left;">
+        
+        <!-- Header Banner -->
+        <div style="display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 18px; margin-bottom: 22px;">
+            <div style="font-size: 2.2rem; background: #fef3c7; border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                👥
+            </div>
+            <div style="flex: 1; text-align: left;">
+                <h1 style="font-size: 1.4rem; font-weight: 700; margin: 0 0 4px 0; color: #1e293b;">
+                    Paiement de Part Covoiturage ("Split-Fare")
+                </h1>
+                <p style="margin: 0; color: #64748b; font-size: 0.95rem;">
+                    Course collective Douala • Règlement individuel sécurisé via MTN MoMo ou Orange Money
+                </p>
+            </div>
+        </div>
+
+        <!-- Trajet & Ride Summary Box -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 22px; text-align: left;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                <div>
+                    <span style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px;">Trajet Douala</span>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a; margin-top: 2px;">
+                        📍 {{ split.pickup }} ➔ {{ split.destination }}
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px;">Organisateur</span>
+                    <div style="font-weight: 600; font-size: 1rem; color: #0f172a; margin-top: 2px;">
+                        👤 {{ split.organizer_name }}
+                        {% if split.organizer_phone %}
+                        <small style="color: #64748b; font-weight: normal; display: block;">📞 {{ split.organizer_phone }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px;">Véhicule &amp; Groupe</span>
+                    <div style="font-weight: 600; font-size: 1rem; color: #0f172a; margin-top: 2px;">
+                        🚕 Taxi partagé ({{ split.split_count }} passagers)
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px;">Tarif Total Course</span>
+                    <div style="font-weight: 600; font-size: 1rem; color: #0f172a; margin-top: 2px;">
+                        {{ "%.0f"|format(split.total_fare) }} FCFA
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Co-Passenger Personal Share Callout -->
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 2px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-bottom: 26px; text-align: left; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+            <div>
+                <span style="display: inline-block; background: #2563eb; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; margin-bottom: 6px;">
+                    Passager #{{ split.passenger_index }} • {{ split.passenger_name }}
+                </span>
+                <div style="font-size: 0.95rem; color: #334155;">
+                    Montant de votre contribution individuelle :
+                </div>
+                <div style="font-size: 2rem; font-weight: 800; color: #1e3a8a; line-height: 1.2;">
+                    {{ "%.0f"|format(split.share_amount) }} <span style="font-size: 1.1rem; font-weight: 600;">FCFA</span>
+                </div>
+            </div>
+            <div>
+                {% if split.is_paid %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; background: #dcfce7; color: #15803d; font-weight: 700; padding: 8px 16px; border-radius: 8px; font-size: 0.95rem; border: 1px solid #86efac;">
+                    ✅ Part Déjà Réglée
+                </span>
+                {% else %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; background: #fef9c3; color: #854d0e; font-weight: 700; padding: 8px 16px; border-radius: 8px; font-size: 0.95rem; border: 1px solid #fde047;">
+                    ⏳ En Attente de Règlement
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if split.is_paid %}
+        <!-- Success Receipt Box -->
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 26px; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <span style="font-size: 1.6rem;">🎉</span>
+                <strong style="color: #166534; font-size: 1.1rem;">Merci ! Votre part a été confirmée avec succès.</strong>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.95rem; color: #1e293b;">
+                <div><strong>Réf. Paiement :</strong> <code style="background: #dcfce7; padding: 2px 6px; border-radius: 4px;">{{ split.payment_reference or '-' }}</code></div>
+                <div><strong>Opérateur :</strong> {{ split.operator or 'Mobile Money' }}</div>
+                <div><strong>Date &amp; Heure :</strong> {{ split.paid_at or 'Confirmé' }}</div>
+                <div><strong>Téléphone débité :</strong> {{ split.passenger_phone or '-' }}</div>
+            </div>
+            <p style="margin: 14px 0 0 0; font-size: 0.9rem; color: #15803d;">
+                L'organisateur de la course a été notifié en direct sur son tableau de bord MboaLift.
+            </p>
+        </div>
+        {% else %}
+
+        <!-- Payment Option 1: Mobile Money Direct Payment Form -->
+        <div style="margin-bottom: 26px; text-align: left;">
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin: 0 0 14px 0; display: flex; align-items: center; gap: 8px;">
+                <span>💳</span> Option 1 : Paiement direct par Mobile Money (MoMo / OM)
+            </h2>
+
+            <form method="POST" action="{{ url_for('split_pay', token=split.invite_token) }}" style="text-align: left;">
+                <!-- Operator Selection -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 8px; font-size: 0.9rem;">
+                        Choisissez votre opérateur Mobile Money :
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <label style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #facc15; border-radius: 10px; background: #fffbeb; cursor: pointer; text-align: left;">
+                            <input type="radio" name="operator" value="MTN" checked style="accent-color: #ca8a04;">
+                            <div>
+                                <strong style="display: block; color: #854d0e; font-size: 0.95rem;">🟡 MTN MoMo</strong>
+                                <small style="color: #a16207;">MTN Mobile Money Cameroun</small>
+                            </div>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #fb923c; border-radius: 10px; background: #fff7ed; cursor: pointer; text-align: left;">
+                            <input type="radio" name="operator" value="ORANGE" style="accent-color: #ea580c;">
+                            <div>
+                                <strong style="display: block; color: #9a3412; font-size: 0.95rem;">🟠 Orange Money</strong>
+                                <small style="color: #c2410c;">Orange Money Cameroun</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Phone input -->
+                <div style="margin-bottom: 18px;">
+                    <label for="splitPhoneInput" style="display: block; font-weight: 600; color: #334155; margin-bottom: 6px; font-size: 0.9rem;">
+                        Numéro de compte Mobile Money (9 chiffres) :
+                    </label>
+                    <input type="tel" id="splitPhoneInput" name="phone" required
+                           value="{{ split.passenger_phone or '' }}"
+                           placeholder="Ex: 671234567 ou 691234567"
+                           class="form-input"
+                           style="width: 100%; padding: 11px 14px; font-size: 1rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;">
+                    <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">
+                        Un prompt de confirmation USSD apparaîtra sur votre téléphone pour saisir votre code PIN secret.
+                    </small>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 13px 20px; font-size: 1.05rem; font-weight: 700; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>🔒</span> Valider le paiement de {{ "%.0f"|format(split.share_amount) }} FCFA
+                </button>
+            </form>
+        </div>
+
+        <!-- Payment Option 2: Direct USSD String Dialing -->
+        <div style="margin-bottom: 26px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; text-align: left;">
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                <span>📲</span> Option 2 : Composer directement par syntaxe USSD (Sans connexion)
+            </h2>
+            <p style="font-size: 0.88rem; color: #64748b; margin: 0 0 14px 0;">
+                Si votre connexion internet est faible ou si vous préférez composer directement sur le réseau GSM camerounais :
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- MTN USSD Row -->
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <div style="text-align: left;">
+                        <span style="font-weight: 700; color: #854d0e; font-size: 0.85rem; display: block;">🟡 MTN Mobile Money (*126) :</span>
+                        <code style="font-size: 1rem; font-weight: bold; color: #0f172a;">{{ ussd.momo_raw }}</code>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <a href="{{ ussd.momo_dial }}" class="btn-primary btn-sm" style="text-decoration: none;">
+                            📞 Composer
+                        </a>
+                        <button type="button" class="btn-outline btn-sm" onclick="copyUssdText('{{ ussd.momo_raw }}', this)">
+                            📋 Copier
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Orange USSD Row -->
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <div style="text-align: left;">
+                        <span style="font-weight: 700; color: #9a3412; font-size: 0.85rem; display: block;">🟠 Orange Money (*150) :</span>
+                        <code style="font-size: 1rem; font-weight: bold; color: #0f172a;">{{ ussd.om_raw }}</code>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <a href="{{ ussd.om_dial }}" class="btn-primary btn-sm" style="text-decoration: none;">
+                            📞 Composer
+                        </a>
+                        <button type="button" class="btn-outline btn-sm" onclick="copyUssdText('{{ ussd.om_raw }}', this)">
+                            📋 Copier
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Group Status Tracker -->
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <h3 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0;">
+                    👥 Statut de l'ensemble du groupe ({{ paid_count }} / {{ all_splits|length }} réglés)
+                </h3>
+                <span style="font-size: 0.85rem; font-weight: 600; color: #2563eb;">
+                    {{ (paid_count / all_splits|length * 100)|round }}% complété
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
+                <div style="height: 100%; width: {{ (paid_count / all_splits|length * 100)|round }}%; background: #16a34a; transition: width 0.3s ease;"></div>
+            </div>
+
+            <!-- Participants list -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                {% for p in all_splits %}
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #475569;">
+                            {{ p.passenger_index }}
+                        </span>
+                        <div>
+                            <strong style="font-size: 0.9rem; color: #1e293b;">
+                                {{ p.passenger_name }} {% if p.passenger_index == split.passenger_index %}(Vous){% elif p.passenger_index == 1 %}(Organisateur){% endif %}
+                            </strong>
+                            <small style="color: #64748b; display: block;">{{ "%.0f"|format(p.share_amount) }} FCFA</small>
+                        </div>
+                    </div>
+                    <div>
+                        {% if p.is_paid %}
+                        <span style="color: #16a34a; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                            ✅ Réglé ({{ p.operator or 'MoMo' }})
+                        </span>
+                        {% else %}
+                        <span style="color: #d97706; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                            ⏳ En attente
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function copyUssdText(text, btn) {
+    if (!navigator.clipboard) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+    } else {
+        navigator.clipboard.writeText(text);
+    }
+    var oldText = btn.innerHTML;
+    btn.innerHTML = "✅ Copié !";
+    btn.style.borderColor = "#16a34a";
+    btn.style.color = "#16a34a";
+    setTimeout(function() {
+        btn.innerHTML = oldText;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+    }, 2500);
+}
+</script>
+{% endblock %}
