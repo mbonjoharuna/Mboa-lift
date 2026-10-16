@@ -47,9 +47,18 @@
         </thead>
         <tbody>
             {% for r in rides %}
-            <tr class="{% if r.negotiation_status == 'PROPOSED' %}row-negotiated{% endif %}">
+            <tr class="{% if r.is_scheduled %}row-scheduled{% elif r.negotiation_status == 'PROPOSED' %}row-negotiated{% endif %}">
                 <td>#{{ r.id }}</td>
                 <td>
+                    {% if r.is_scheduled %}
+                        {% if r.scheduled_type == 'airport' %}
+                            <span class="badge badge-airport" style="margin-bottom:4px;display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">✈️ Navette Aéroport</span><br>
+                        {% elif r.scheduled_type == 'port' %}
+                            <span class="badge badge-port" style="margin-bottom:4px;display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">⚓ Shift Port</span><br>
+                        {% else %}
+                            <span class="badge badge-standard-shuttle" style="margin-bottom:4px;display:inline-block;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;">📅 Navette Planifiée</span><br>
+                        {% endif %}
+                    {% endif %}
                     {% if r.vehicle_type == 'bendskin' %}
                         <span class="badge badge-bendskin">🏍️ Bendskin</span>
                     {% elif r.vehicle_type == 'comfort' %}
@@ -69,7 +78,17 @@
                     {% endif %}
                 </td>
                 <td>{{ r.rider_name }}<br><small>📞 {{ r.rider_phone }}</small></td>
-                <td><strong>{{ r.pickup }} → {{ r.destination }}</strong></td>
+                <td>
+                    <strong>{{ r.pickup }} → {{ r.destination }}</strong>
+                    {% if r.is_scheduled and r.scheduled_time %}
+                        <br><span style="color:#0369a1;font-weight:600;font-size:0.78rem;">⏰ Prévu : {{ r.scheduled_time.strftime('%d/%m à %H:%M') }}</span>
+                    {% endif %}
+                    {% if r.flight_or_shift_notes %}
+                        <br><small style="color:#475569;font-size:0.75rem;background:#f8fafc;padding:1px 5px;border-radius:4px;border:1px solid #e2e8f0;display:inline-block;margin-top:2px;">
+                            📝 {{ r.flight_or_shift_notes }}
+                        </small>
+                    {% endif %}
+                </td>
                 <td>{{ r.passengers }}</td>
                 <td>
                     <strong>{{ "%.0f"|format(r.fare) }} XAF</strong>
@@ -82,6 +101,15 @@
                 <td>{{ r.created_at.strftime('%d/%m %H:%M') if r.created_at else '-' }}</td>
                 <td>
                     <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
+                        {% if r.is_scheduled %}
+                        <form method="POST" action="{{ url_for('driver_precommit_ride', ride_id=r.id) }}"
+                              onsubmit="return confirm('Pré-réserver cette navette garantie pour le {{ r.scheduled_time.strftime('%d/%m à %H:%M') if r.scheduled_time else '' }} ? Votre disponibilité live reste libre pour continuer à rouler aujourd\'hui.');" style="margin:0;">
+                            <button type="submit" class="btn-primary btn-sm" style="background:#047857;border-color:#047857;">
+                                🛡️ Pré-réserver cette navette
+                            </button>
+                        </form>
+                        <small style="color:#059669;font-size:0.72rem;display:block;margin-top:2px;">✓ Ne bloque pas vos courses du jour</small>
+                        {% else %}
                         <form method="POST" action="{{ url_for('driver_accept_ride', ride_id=r.id) }}"
                               onsubmit="return confirm('Accepter cette course pour {{ "%.0f"|format(r.fare) }} XAF ?');" style="margin:0;">
                             <button type="submit" class="btn-primary btn-sm">
@@ -92,6 +120,8 @@
                                 {% endif %}
                             </button>
                         </form>
+                        {% endif %}
+
                         <button type="button" class="btn-outline btn-sm"
                                 onclick="var cf=document.getElementById('counterForm_{{ r.id }}'); if(cf){cf.style.display=(cf.style.display==='none'||!cf.style.display)?'flex':'none';}">
                             💬 Contre-proposer

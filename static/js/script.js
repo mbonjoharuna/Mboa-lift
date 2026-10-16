@@ -345,6 +345,127 @@ function initFareCalculator() {
     });
 }
 
+// ---------- Scheduled Early-Morning Airport & Port Shuttles ----------
+function initScheduledShuttleSystem() {
+    const tabModeNow = document.getElementById("tabModeNow");
+    const tabModeScheduled = document.getElementById("tabModeScheduled");
+    const bookingModeInput = document.getElementById("bookingModeInput");
+    const scheduledShuttlePanel = document.getElementById("scheduledShuttlePanel");
+    const scheduledTimeInput = document.getElementById("scheduledTimeInput");
+    const scheduledTypeSelect = document.getElementById("scheduledTypeSelect");
+    const flightNotesInput = document.getElementById("flightNotesInput");
+    const submitRideBtn = document.getElementById("submitRide");
+    const presetChips = document.querySelectorAll(".shuttle-preset-chip");
+    const destinationInput = document.getElementById("destination");
+
+    if (!tabModeNow || !tabModeScheduled || !bookingModeInput) return;
+
+    function toDateTimeLocalString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    function updateDateBounds() {
+        if (!scheduledTimeInput) return;
+        const now = new Date();
+        const minDate = new Date(now.getTime() + 15 * 60 * 1000);
+        const maxDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        scheduledTimeInput.min = toDateTimeLocalString(minDate);
+        scheduledTimeInput.max = toDateTimeLocalString(maxDate);
+
+        if (!scheduledTimeInput.value) {
+            const tomorrowMorning = new Date();
+            tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+            tomorrowMorning.setHours(5, 30, 0, 0);
+            scheduledTimeInput.value = toDateTimeLocalString(tomorrowMorning);
+        }
+    }
+
+    function setBookingMode(mode) {
+        bookingModeInput.value = mode;
+        if (mode === "scheduled") {
+            tabModeScheduled.classList.add("active");
+            tabModeNow.classList.remove("active");
+            if (scheduledShuttlePanel) scheduledShuttlePanel.style.display = "block";
+            updateDateBounds();
+            if (submitRideBtn) {
+                submitRideBtn.innerHTML = (window.MboaLiftI18n && window.MboaLiftI18n.t)
+                    ? window.MboaLiftI18n.t("✈️ Réserver ma navette planifiée")
+                    : "✈️ Réserver ma navette planifiée";
+            }
+        } else {
+            tabModeNow.classList.add("active");
+            tabModeScheduled.classList.remove("active");
+            if (scheduledShuttlePanel) scheduledShuttlePanel.style.display = "none";
+            if (submitRideBtn) {
+                submitRideBtn.innerHTML = (window.MboaLiftI18n && window.MboaLiftI18n.t)
+                    ? window.MboaLiftI18n.t("Commander la course")
+                    : "Commander la course";
+            }
+        }
+    }
+
+    tabModeNow.addEventListener("click", function() { setBookingMode("now"); });
+    tabModeScheduled.addEventListener("click", function() { setBookingMode("scheduled"); });
+
+    presetChips.forEach(function(chip) {
+        chip.addEventListener("click", function(e) {
+            e.preventDefault();
+            presetChips.forEach(function(c) { c.classList.remove("active"); });
+            chip.classList.add("active");
+
+            const dest = chip.getAttribute("data-dest");
+            const timeStr = chip.getAttribute("data-time");
+            const notes = chip.getAttribute("data-notes");
+            const type = chip.getAttribute("data-type");
+
+            if (destinationInput && dest) {
+                destinationInput.value = dest;
+            }
+            if (scheduledTypeSelect && type) {
+                scheduledTypeSelect.value = type;
+            }
+            if (flightNotesInput && notes) {
+                flightNotesInput.value = notes;
+            }
+
+            if (scheduledTimeInput && timeStr) {
+                const parts = timeStr.split(":");
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+                scheduledTimeInput.value = toDateTimeLocalString(tomorrow);
+            }
+
+            if (type === "airport") {
+                const comfortRadio = document.querySelector('input[name="vehicle_type"][value="comfort"]');
+                if (comfortRadio) {
+                    comfortRadio.checked = true;
+                    document.querySelectorAll(".vehicle-card").forEach(function(c) { c.classList.remove("active"); });
+                    const comfortCard = comfortRadio.closest(".vehicle-card");
+                    if (comfortCard) comfortCard.classList.add("active");
+                }
+            }
+
+            if (destinationInput) {
+                destinationInput.dispatchEvent(new Event("input"));
+                destinationInput.dispatchEvent(new Event("change"));
+            }
+        });
+    });
+
+    if (bookingModeInput.value === "scheduled") {
+        setBookingMode("scheduled");
+    } else {
+        updateDateBounds();
+    }
+}
+
 // ---------- Client-side validation helpers ----------
 function validateRegisterForm() {
     const form = document.getElementById("registerForm");
@@ -375,15 +496,37 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    initScheduledShuttleSystem();
+
     // Ride form basic check
     const rideForm = document.getElementById("rideForm");
     if (rideForm) {
         rideForm.addEventListener("submit", function (e) {
-            const p = document.getElementById("pickup").value;
-            const d = document.getElementById("destination").value;
-            if (p && d && p === d) {
+            const p = document.getElementById("pickup").value.trim();
+            const d = document.getElementById("destination").value.trim();
+            if (p && d && p.toLowerCase() === d.toLowerCase()) {
                 e.preventDefault();
-                alert("Pickup and destination cannot be the same.");
+                alert(_t("Pickup and destination cannot be the same."));
+                return;
+            }
+
+            const bookingModeInput = document.getElementById("bookingModeInput");
+            if (bookingModeInput && bookingModeInput.value === "scheduled") {
+                const scheduledTimeInput = document.getElementById("scheduledTimeInput");
+                if (!scheduledTimeInput || !scheduledTimeInput.value) {
+                    e.preventDefault();
+                    alert(_t("Veuillez sélectionner une date et heure de départ pour votre navette planifiée."));
+                    if (scheduledTimeInput) scheduledTimeInput.focus();
+                    return;
+                }
+                const chosen = new Date(scheduledTimeInput.value);
+                const minAllowed = new Date(Date.now() + 14 * 60 * 1000);
+                if (isNaN(chosen.getTime()) || chosen < minAllowed) {
+                    e.preventDefault();
+                    alert(_t("La réservation à l'avance doit être fixée au moins 15 minutes dans le futur."));
+                    if (scheduledTimeInput) scheduledTimeInput.focus();
+                    return;
+                }
             }
         });
     }

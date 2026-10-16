@@ -7,6 +7,119 @@
     <p>Passenger dashboard — request rides and pay with MoMo</p>
 </div>
 
+{% if scheduled_shuttles %}
+<!-- Pre-flight & Port Scheduled Shuttle Reminder Card -->
+<div class="scheduled-shuttles-card">
+    <div class="shuttles-card-header">
+        <div class="shuttles-header-title">
+            <span class="shuttle-header-icon">✈️</span>
+            <div>
+                <strong>Mes Navettes &amp; Départs Planifiés (Aéroport / Port)</strong>
+                <span class="shuttles-header-sub">Courses programmées avec pré-engagement chauffeur garanti</span>
+            </div>
+        </div>
+        <a href="{{ url_for('request_ride', mode='scheduled') }}" class="btn-outline btn-sm">+ Nouvelle navette</a>
+    </div>
+
+    <div class="scheduled-shuttles-list">
+        {% for s in scheduled_shuttles %}
+        <div class="scheduled-shuttle-item" data-shuttle-id="{{ s.id }}">
+            <div class="shuttle-item-top">
+                <div class="shuttle-type-badge-group">
+                    {% if s.scheduled_type == 'airport' %}
+                        <span class="badge badge-airport">✈️ Navette Aéroport DLA</span>
+                    {% elif s.scheduled_type == 'port' %}
+                        <span class="badge badge-port">⚓ Shift Port de Douala</span>
+                    {% else %}
+                        <span class="badge badge-standard-shuttle">📅 Course Planifiée</span>
+                    {% endif %}
+                    <span class="shuttle-time-badge">
+                        ⏰ Départ prévu : <strong>{{ s.scheduled_time.strftime('%d/%m/%Y à %H:%M') if s.scheduled_time else '-' }}</strong>
+                    </span>
+                </div>
+                <div class="shuttle-fare-badge">
+                    <strong>{{ "%.0f"|format(s.fare) }} XAF</strong>
+                </div>
+            </div>
+
+            <div class="shuttle-item-body">
+                <div class="shuttle-route-line">
+                    <span class="route-point start">📍 <strong>{{ s.pickup }}</strong></span>
+                    <span class="route-arrow">➔</span>
+                    <span class="route-point end">🎯 <strong>{{ s.destination }}</strong></span>
+                    {% if s.vehicle_type == 'comfort' %}
+                        <span class="badge badge-comfort" style="margin-left:6px;">🚗 Confort</span>
+                    {% elif s.vehicle_type == 'taxi' %}
+                        <span class="badge badge-taxi" style="margin-left:6px;">🚕 Taxi Jaune</span>
+                    {% else %}
+                        <span class="badge badge-bendskin" style="margin-left:6px;">🏍️ Bendskin</span>
+                    {% endif %}
+                </div>
+
+                {% if s.flight_or_shift_notes %}
+                <div class="shuttle-notes-box">
+                    <span class="notes-icon">📝</span>
+                    <span><strong>Consigne / Vol :</strong> {{ s.flight_or_shift_notes }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Driver Pre-commitment Status Banner -->
+                <div class="shuttle-driver-status">
+                    {% if s.driver_name %}
+                    <div class="driver-precommitted-box">
+                        <span class="driver-status-icon">✅</span>
+                        <div class="driver-status-text">
+                            <strong>Chauffeur garanti pré-engagé :</strong>
+                            <span>{{ s.driver_name }} {% if s.vehicle_info %}({{ s.vehicle_info }}){% endif %}</span>
+                            {% if s.driver_phone %}
+                            <a href="tel:{{ s.driver_phone }}" class="driver-call-pill">📞 {{ s.driver_phone }}</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="driver-pending-box">
+                        <span class="driver-status-icon">⏳</span>
+                        <div class="driver-status-text">
+                            <strong>En cours de pré-attribution chauffeur...</strong>
+                            <small>Les chauffeurs partenaires reçoivent votre demande prioritaire pour valider leur présence matinale.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pre-flight / Pre-shift Safety & Practical Checklist -->
+                <div class="shuttle-checklist-tip">
+                    {% if s.scheduled_type == 'airport' %}
+                        <span class="tip-icon">💡</span>
+                        <span><strong>Conseil Vol Aéroport DLA :</strong> Présentez-vous à l'enregistrement 2h avant le décollage. N'oubliez pas passeport, visa, billet et carnet de vaccination fièvre jaune.</span>
+                    {% elif s.scheduled_type == 'port' %}
+                        <span class="tip-icon">💡</span>
+                        <span><strong>Conseil Shift Port Autonome :</strong> Munissez-vous de votre badge d'accès portuaire et gilet haute visibilité pour l'accès aux quais et terminaux.</span>
+                    {% else %}
+                        <span class="tip-icon">💡</span>
+                        <span><strong>Conseil Ponctualité :</strong> Soyez prêt au lieu de prise en charge 5 minutes avant l'heure convenue.</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="shuttle-item-actions">
+                <a href="https://wa.me/?text={{ ('Je voyage avec MboaLift (Navette planifiée #' ~ s.id ~ '). Départ le ' ~ (s.scheduled_time.strftime('%d/%m/%Y à %H:%M') if s.scheduled_time else '') ~ ' de ' ~ s.pickup ~ ' vers ' ~ s.destination ~ '. Chauffeur: ' ~ (s.driver_name or 'En attente'))|urlencode }}"
+                   target="_blank" class="btn-safety btn-sm" title="Partager ce départ avec vos proches">
+                    🛡️ Partager ma navette
+                </a>
+                {% if s.status == 'PENDING' %}
+                <form method="POST" action="{{ url_for('rider_cancel_ride', ride_id=s.id) }}" style="display:inline;"
+                      onsubmit="return confirm('Voulez-vous vraiment annuler cette navette planifiée ?');">
+                    <button type="submit" class="btn-danger btn-sm">Annuler la navette</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% if active_ride %}
 <div class="live-tracker-card status-{{ active_ride.status|lower }}"
      data-active-ride-id="{{ active_ride.id }}"

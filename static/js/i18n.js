@@ -635,6 +635,68 @@
       'Douala Market & Luggage Equipment': 'Équipements Bagages & Marché Douala',
       'Coffre accessible & spacieux (valises, malles et cartons)': 'Coffre accessible & spacieux (valises, malles et cartons)',
       'Galerie de toit / Porte-bagages (prisé autour de Marché Mboppi, Sandaga, Central)': 'Galerie de toit / Porte-bagages (prisé autour de Marché Mboppi, Sandaga, Central)',
+
+      // Scheduled Early-Morning Airport & Port Shuttles
+      'Partir maintenant': 'Partir maintenant',
+      'Départ immédiat en ville': 'Départ immédiat en ville',
+      'Réserver à l\'avance': 'Réserver à l\'avance',
+      'Navette Aéroport / Port / Matin': 'Navette Aéroport / Port / Matin',
+      'Navettes Matinales & Départs Planifiés': 'Navettes Matinales & Départs Planifiés',
+      'Navettes Matinales &amp; Départs Planifiés': 'Navettes Matinales & Départs Planifiés',
+      'Aéroport International DLA, Port Autonome de Douala ou gare ferroviaire': 'Aéroport International DLA, Port Autonome de Douala ou gare ferroviaire',
+      'Créneaux & Destinations Express :': 'Créneaux & Destinations Express :',
+      'Créneaux &amp; Destinations Express :': 'Créneaux & Destinations Express :',
+      'Vol matinal Aéroport DLA (05:00 - 06:30)': 'Vol matinal Aéroport DLA (05:00 - 06:30)',
+      'Shift matinal Port de Douala (06:00 - 07:00)': 'Shift matinal Port de Douala (06:00 - 07:00)',
+      'Départ Gare de Bessengue (05:30 - 06:30)': 'Départ Gare de Bessengue (05:30 - 06:30)',
+      'Date & Heure de prise en charge': 'Date & Heure de prise en charge',
+      'Date &amp; Heure de prise en charge': 'Date & Heure de prise en charge',
+      'Réservation possible jusqu\'à 7 jours à l\'avance (minimum 15 min).': 'Réservation possible jusqu\'à 7 jours à l\'avance (minimum 15 min).',
+      'Type de navette': 'Type de navette',
+      'Navette Aéroport International de Douala (DLA)': 'Navette Aéroport International de Douala (DLA)',
+      'Navette Port Autonome de Douala (Bonanjo)': 'Navette Port Autonome de Douala (Bonanjo)',
+      'Course matinale / Planifiée standard': 'Course matinale / Planifiée standard',
+      'Permet aux chauffeurs de préparer le coffre et l\'itinéraire adapté.': 'Permet aux chauffeurs de préparer le coffre et l\'itinéraire adapté.',
+      'N° de vol, relève de quart ou consignes spécifiques (Optionnel)': 'N° de vol, relève de quart ou consignes spécifiques (Optionnel)',
+      'Indiqué au chauffeur pour qu\'il suive d\'éventuels retards ou spécificités de quai/terminal.': 'Indiqué au chauffeur pour qu\'il suive d\'éventuels retards ou spécificités de quai/terminal.',
+      'Garantie Ponctualité Matinale MboaLift': 'Garantie Ponctualité Matinale MboaLift',
+      'Les chauffeurs partenaires se pré-engagent sur votre créneau. Vous recevez un rappel de confirmation et les coordonnées directes du chauffeur dès la réservation validée.': 'Les chauffeurs partenaires se pré-engagent sur votre créneau. Vous recevez un rappel de confirmation et les coordonnées directes du chauffeur dès la réservation validée.',
+      'Réserver ma navette planifiée': 'Réserver ma navette planifiée',
+      '✈️ Réserver ma navette planifiée': '✈️ Réserver ma navette planifiée',
+      'Mes Navettes & Départs Planifiés (Aéroport / Port)': 'Mes Navettes & Départs Planifiés (Aéroport / Port)',
+      'Mes Navettes &amp; Départs Planifiés (Aéroport / Port)': 'Mes Navettes & Départs Planifiés (Aéroport / Port)',
+      'Courses programmées avec pré-engagement chauffeur garanti': 'Courses programmées avec pré-engagement chauffeur garanti',
+      '+ Nouvelle navette': '+ Nouvelle navette',
+      'Navette Aéroport DLA': 'Navette Aéroport DLA',
+      '✈️ Navette Aéroport DLA': '✈️ Navette Aéroport DLA',
+      '✈️ Navette Aéroport': '✈️ Navette Aéroport',
+      'Shift Port de Douala': 'Shift Port de Douala',
+      '⚓ Shift Port de Douala': '⚓ Shift Port de Douala',
+      '⚓ Shift Port': '⚓ Shift Port',
+      'Course Planifiée': 'Course Planifiée',
+      '📅 Course Planifiée': '📅 Course Planifiée',
+      '📅 Navette Planifiée': '📅 Navette Planifiée',
+      'Chauffeur garanti pré-engagé :': 'Chauffeur garanti pré-engagé :',
+      'En cours de pré-attribution chauffeur...': 'En cours de pré-attribution chauffeur...',
+      'Les chauffeurs partenaires reçoivent votre demande prioritaire pour valider leur présence matinale.': 'Les chauffeurs partenaires reçoivent votre demande prioritaire pour valider leur présence matinale.',
+      'Conseil Vol Aéroport DLA :': 'Conseil Vol Aéroport DLA :',
+      'Présentez-vous à l\'enregistrement 2h avant le décollage. N\'oubliez pas passeport, visa, billet et carnet de vaccination fièvre jaune.': 'Présentez-vous à l\'enregistrement 2h avant le décollage. N\'oubliez pas passeport, visa, billet et carnet de vaccination fièvre jaune.',
+      'Conseil Shift Port Autonome :': 'Conseil Shift Port Autonome :',
+      'Munissez-vous de votre badge d\'accès portuaire et gilet haute visibilité pour l\'accès aux quais et terminaux.': 'Munissez-vous de votre badge d\'accès portuaire et gilet haute visibilité pour l\'accès aux quais et terminaux.',
+      'Conseil Ponctualité :': 'Conseil Ponctualité :',
+      'Soyez prêt au lieu de prise en charge 5 minutes avant l\'heure convenue.': 'Soyez prêt au lieu de prise en charge 5 minutes avant l\'heure convenue.',
+      'Partager ma navette': 'Partager ma navette',
+      'Annuler la navette': 'Annuler la navette',
+      'Voulez-vous vraiment annuler cette navette planifiée ?': 'Voulez-vous vraiment annuler cette navette planifiée ?',
+      'Pré-réserver cette navette': 'Pré-réserver cette navette',
+      '🛡️ Pré-réserver cette navette': '🛡️ Pré-réserver cette navette',
+      '✓ Ne bloque pas vos courses du jour': '✓ Ne bloque pas vos courses du jour',
+      '✓ Ne bloque pas vos courses d\'aujourd\'hui': '✓ Ne bloque pas vos courses d\'aujourd\'hui',
+      'Navette Aéroport planifiée !': 'Navette Aéroport planifiée !',
+      'Navette Port planifiée !': 'Navette Port planifiée !',
+      'Course planifiée !': 'Course planifiée !',
+      'Veuillez sélectionner une date et heure de départ pour votre navette planifiée.': 'Veuillez sélectionner une date et heure de départ pour votre navette planifiée.',
+      'La réservation à l\'avance doit être fixée au moins 15 minutes dans le futur.': 'La réservation à l\'avance doit être fixée au moins 15 minutes dans le futur.',
     },
 
     // French -> English (allows flawless switching back to English on French templates!)
@@ -1213,6 +1275,68 @@
       'Douala Market & Luggage Equipment': 'Douala Market & Luggage Equipment',
       'Coffre accessible & spacieux (valises, malles et cartons)': 'Accessible & spacious trunk (suitcases, trunks, and cartons)',
       'Galerie de toit / Porte-bagages (prisé autour de Marché Mboppi, Sandaga, Central)': 'Roof rack / Luggage carrier (popular around Marché Mboppi, Sandaga, Central)',
+
+      // Scheduled Early-Morning Airport & Port Shuttles
+      'Partir maintenant': 'Leave Now',
+      'Départ immédiat en ville': 'Immediate departure in city',
+      'Réserver à l\'avance': 'Schedule in Advance',
+      'Navette Aéroport / Port / Matin': 'Airport / Port / Morning Shuttle',
+      'Navettes Matinales & Départs Planifiés': 'Early-Morning & Scheduled Shuttles',
+      'Navettes Matinales &amp; Départs Planifiés': 'Early-Morning & Scheduled Shuttles',
+      'Aéroport International DLA, Port Autonome de Douala ou gare ferroviaire': 'DLA International Airport, Douala Port or railway station',
+      'Créneaux & Destinations Express :': 'Express Slots & Destinations:',
+      'Créneaux &amp; Destinations Express :': 'Express Slots & Destinations:',
+      'Vol matinal Aéroport DLA (05:00 - 06:30)': 'Early flight Douala Airport (05:00 - 06:30)',
+      'Shift matinal Port de Douala (06:00 - 07:00)': 'Morning shift Douala Port (06:00 - 07:00)',
+      'Départ Gare de Bessengue (05:30 - 06:30)': 'Train departure Bessengue Station (05:30 - 06:30)',
+      'Date & Heure de prise en charge': 'Pickup Date & Time',
+      'Date &amp; Heure de prise en charge': 'Pickup Date & Time',
+      'Réservation possible jusqu\'à 7 jours à l\'avance (minimum 15 min).': 'Booking available up to 7 days in advance (min. 15 min).',
+      'Type de navette': 'Shuttle Type',
+      'Navette Aéroport International de Douala (DLA)': 'Douala International Airport Shuttle (DLA)',
+      'Navette Port Autonome de Douala (Bonanjo)': 'Douala Autonomous Port Shuttle (Bonanjo)',
+      'Course matinale / Planifiée standard': 'Standard morning / Scheduled ride',
+      'Permet aux chauffeurs de préparer le coffre et l\'itinéraire adapté.': 'Allows drivers to prepare luggage space and suitable route.',
+      'N° de vol, relève de quart ou consignes spécifiques (Optionnel)': 'Flight No., shift handover or specific notes (Optional)',
+      'Indiqué au chauffeur pour qu\'il suive d\'éventuels retards ou spécificités de quai/terminal.': 'Provided to driver to track delays or dock/terminal specifications.',
+      'Garantie Ponctualité Matinale MboaLift': 'MboaLift Morning Punctuality Guarantee',
+      'Les chauffeurs partenaires se pré-engagent sur votre créneau. Vous recevez un rappel de confirmation et les coordonnées directes du chauffeur dès la réservation validée.': 'Partner drivers pre-commit to your time slot. You receive a confirmation reminder and direct contact details upon assignment.',
+      'Réserver ma navette planifiée': 'Book My Scheduled Shuttle',
+      '✈️ Réserver ma navette planifiée': '✈️ Book My Scheduled Shuttle',
+      'Mes Navettes & Départs Planifiés (Aéroport / Port)': 'My Shuttles & Scheduled Departures (Airport / Port)',
+      'Mes Navettes &amp; Départs Planifiés (Aéroport / Port)': 'My Shuttles & Scheduled Departures (Airport / Port)',
+      'Courses programmées avec pré-engagement chauffeur garanti': 'Scheduled rides with guaranteed driver pre-commitment',
+      '+ Nouvelle navette': '+ New Shuttle',
+      'Navette Aéroport DLA': 'DLA Airport Shuttle',
+      '✈️ Navette Aéroport DLA': '✈️ DLA Airport Shuttle',
+      '✈️ Navette Aéroport': '✈️ Airport Shuttle',
+      'Shift Port de Douala': 'Douala Port Shift',
+      '⚓ Shift Port de Douala': '⚓ Douala Port Shift',
+      '⚓ Shift Port': '⚓ Port Shift',
+      'Course Planifiée': 'Scheduled Ride',
+      '📅 Course Planifiée': '📅 Scheduled Ride',
+      '📅 Navette Planifiée': '📅 Scheduled Shuttle',
+      'Chauffeur garanti pré-engagé :': 'Guaranteed pre-committed driver:',
+      'En cours de pré-attribution chauffeur...': 'Driver pre-assignment in progress...',
+      'Les chauffeurs partenaires reçoivent votre demande prioritaire pour valider leur présence matinale.': 'Partner drivers receive your priority request to confirm their morning attendance.',
+      'Conseil Vol Aéroport DLA :': 'DLA Airport Flight Tip:',
+      'Présentez-vous à l\'enregistrement 2h avant le décollage. N\'oubliez pas passeport, visa, billet et carnet de vaccination fièvre jaune.': 'Arrive at check-in 2 hours before takeoff. Do not forget passport, visa, ticket, and yellow fever vaccination card.',
+      'Conseil Shift Port Autonome :': 'Autonomous Port Shift Tip:',
+      'Munissez-vous de votre badge d\'accès portuaire et gilet haute visibilité pour l\'accès aux quais et terminaux.': 'Bring your port security badge and high-visibility vest to access docks and terminals.',
+      'Conseil Ponctualité :': 'Punctuality Tip:',
+      'Soyez prêt au lieu de prise en charge 5 minutes avant l\'heure convenue.': 'Be ready at the pickup location 5 minutes before scheduled time.',
+      'Partager ma navette': 'Share My Shuttle',
+      'Annuler la navette': 'Cancel Shuttle',
+      'Voulez-vous vraiment annuler cette navette planifiée ?': 'Are you sure you want to cancel this scheduled shuttle?',
+      'Pré-réserver cette navette': 'Pre-commit to this shuttle',
+      '🛡️ Pré-réserver cette navette': '🛡️ Pre-commit to this shuttle',
+      '✓ Ne bloque pas vos courses du jour': '✓ Does not block today\'s rides',
+      '✓ Ne bloque pas vos courses d\'aujourd\'hui': '✓ Does not block today\'s rides',
+      'Navette Aéroport planifiée !': 'Airport Shuttle scheduled!',
+      'Navette Port planifiée !': 'Port Shuttle scheduled!',
+      'Course planifiée !': 'Scheduled ride!',
+      'Veuillez sélectionner une date et heure de départ pour votre navette planifiée.': 'Please select a departure date and time for your scheduled shuttle.',
+      'La réservation à l\'avance doit être fixée au moins 15 minutes dans le futur.': 'Advance bookings must be scheduled at least 15 minutes into the future.',
     }
   };
 
@@ -1248,7 +1372,7 @@
       out = out.replace(/\bTotal Rides:\s*(\d+)/gi, 'Total des courses : $1');
       out = out.replace(/\bTotal Users:\s*(\d+)/gi, 'Total des utilisateurs : $1');
       out = out.replace(/\bMember since\s*/gi, 'Membre depuis ');
-      out = out.replace(/\bSearching\.\.\./gi, 'En recherche...');
+      out = out.replace(/\bEn recherche\.\.\./gi, 'Searching...');
       out = out.replace(/\bOfficial Trip Receipt\s*-\s*([A-Z0-9-]+)\b/gi, 'Reçu Officiel de Course - $1');
       out = out.replace(/\bIssued on\s*(\d{2}\/\d{2}\/\d{4})/gi, 'Émis le $1');
       out = out.replace(/\bUrban ride Douala\s*:\s*(.+?)➔(.+)/gi, 'Course urbaine Douala : $1 ➔ $2');
@@ -1256,6 +1380,11 @@
       out = out.replace(/\bTransport mode adjustment\s*\((.+?)\)/gi, 'Ajustement mode de transport ($1)');
       out = out.replace(/\bNew ride available at\s*(.+?)\s*for\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Nouvelle course disponible à $1 pour $2 FCFA');
       out = out.replace(/\bNegotiated offer received at\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Offre négociée reçue à $1 FCFA');
+      out = out.replace(/\bNew airport shuttle scheduled for (.+?) for ([\d\s]+) FCFA/gi, 'Nouvelle navette aéroport planifiée pour $1 pour $2 FCFA');
+      out = out.replace(/\bNew port shuttle scheduled for (.+?) for ([\d\s]+) FCFA/gi, 'Nouvelle navette port planifiée pour $1 pour $2 FCFA');
+      out = out.replace(/\bNew ride scheduled for (.+?) for ([\d\s]+) FCFA/gi, 'Nouvelle course planifiée pour $1 pour $2 FCFA');
+      out = out.replace(/\bScheduled departure:\s*/gi, 'Départ prévu : ');
+      out = out.replace(/\bNotes \/ Flight:\s*/gi, 'Consigne / Vol : ');
     } else {
       out = out.replace(/\bCourse n°\s*(\d+)\b/gi, 'Ride #$1');
       out = out.replace(/\bCourse #(\d+)\b/gi, 'Ride #$1');
@@ -1285,6 +1414,11 @@
       out = out.replace(/\bAjustement mode de transport\s*\((.+?)\)/gi, 'Transport mode adjustment ($1)');
       out = out.replace(/\bNouvelle course disponible à\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New ride available at $1 for $2 FCFA');
       out = out.replace(/\bOffre négociée reçue à\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'Negotiated offer received at $1 FCFA');
+      out = out.replace(/\bDépart prévu\s*:\s*/gi, 'Scheduled departure: ');
+      out = out.replace(/\bConsigne \/ Vol\s*:\s*/gi, 'Notes / Flight: ');
+      out = out.replace(/\bNouvelle navette aéroport planifiée pour le\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New airport shuttle scheduled for $1 for $2 FCFA');
+      out = out.replace(/\bNouvelle navette port planifiée pour le\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New port shuttle scheduled for $1 for $2 FCFA');
+      out = out.replace(/\bNouvelle course planifiée pour le\s*(.+?)\s*pour\s*([\d\s]+)\s*(?:FCFA|XAF)\b/gi, 'New ride scheduled for $1 for $2 FCFA');
     }
     return out;
   }

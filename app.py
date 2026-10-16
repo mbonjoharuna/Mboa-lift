@@ -703,6 +703,23 @@ def init_db_schema():
         if not cur.fetchone():
             cur.execute("ALTER TABLE drivers ADD COLUMN has_roof_rack BOOLEAN DEFAULT FALSE AFTER has_trunk")
 
+        # Scheduled Rides & Airport/Port Shuttles columns on rides
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'is_scheduled'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN is_scheduled BOOLEAN NOT NULL DEFAULT FALSE AFTER counter_driver_id")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'scheduled_time'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN scheduled_time DATETIME DEFAULT NULL AFTER is_scheduled")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'scheduled_type'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN scheduled_type ENUM('standard', 'airport', 'port') NOT NULL DEFAULT 'standard' AFTER scheduled_time")
+
+        cur.execute("SHOW COLUMNS FROM rides LIKE 'flight_or_shift_notes'")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE rides ADD COLUMN flight_or_shift_notes VARCHAR(150) DEFAULT NULL AFTER scheduled_type")
+
         conn.commit()
         cur.close()
     except Exception as e:
@@ -1331,7 +1348,7 @@ def driver_cashout():
 @app.route("/driver/available-rides")
 @driver_required
 def driver_available_rides():
-    """List PENDING rides that any driver can accept, including negotiated offers."""
+    """List PENDING rides that any driver can accept, including scheduled airport/port shuttles."""
     rides = []
     conn = get_db()
     if conn:
@@ -1341,11 +1358,12 @@ def driver_available_rides():
                 """
                 SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.cargo_type, r.cargo_fee, r.fare,
                        r.original_fare, r.negotiation_status, r.driver_counter_fare, r.counter_driver_id,
+                       r.is_scheduled, r.scheduled_time, r.scheduled_type, r.flight_or_shift_notes,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
                 WHERE r.status = 'PENDING' AND r.driver_id IS NULL
-                ORDER BY r.created_at ASC
+                ORDER BY r.is_scheduled DESC, r.scheduled_time ASC, r.created_at ASC
                 """
             )
             rides = cur.fetchall()
@@ -1360,7 +1378,7 @@ def driver_available_rides():
 @app.route("/driver/my-rides")
 @driver_required
 def driver_my_rides():
-    """Rides accepted by this driver."""
+    """Rides accepted by this driver (both immediate and pre-committed scheduled shuttles)."""
     driver_id = session["driver_id"]
     rides = []
     conn = get_db()
@@ -1371,11 +1389,12 @@ def driver_my_rides():
                 """
                 SELECT r.id, r.pickup, r.destination, r.passengers, r.vehicle_type, r.cargo_type, r.cargo_fee, r.fare,
                        r.original_fare, r.negotiation_status,
+                       r.is_scheduled, r.scheduled_time, r.scheduled_type, r.flight_or_shift_notes,
                        r.status, r.created_at, u.full_name AS rider_name, u.phone AS rider_phone
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
                 WHERE r.driver_id = %s
-                ORDER BY r.created_at DESC
+                ORDER BY r.is_scheduled DESC, r.scheduled_time ASC, r.created_at DESC
                 """,
                 (driver_id,)
             )
@@ -1396,7 +1415,8 @@ def driver_accept_ride(ride_id):
     - Sets driver_id and status = ACCEPTED
     - Sets negotiation_status = ACCEPTED if it was PROPOSED
     - Other drivers can no longer take this ride
-    - Other PENDING rides of the same rider are cancelled
+    - For immediate rides: sets driver to busy and cancels rider's other immediate pending rides.
+    - For scheduled rides: keeps driver free today and preserves upcoming bookings.
     """
     driver_id = session["driver_id"]
     conn = get_db()
@@ -1408,7 +1428,9 @@ def driver_accept_ride(ride_id):
         cur = conn.cursor(dictionary=True)
         # Lock-style check: only accept if still PENDING and no driver
         cur.execute(
-            "SELECT id, user_id, status, driver_id, fare, original_fare, negotiation_status FROM rides WHERE id = %s",
+            """SELECT id, user_id, status, driver_id, fare, original_fare, negotiation_status,
+                      is_scheduled, scheduled_time, scheduled_type
+               FROM rides WHERE id = %s""",
             (ride_id,)
         )
         ride = cur.fetchone()
@@ -1433,26 +1455,31 @@ def driver_accept_ride(ride_id):
             conn.rollback()
             return redirect(url_for("driver_available_rides"))
 
-        cur.execute(
-            "UPDATE drivers SET availability = 'busy' WHERE id = %s",
-            (driver_id,)
-        )
+        is_sch = bool(ride.get("is_scheduled"))
+        if not is_sch:
+            cur.execute(
+                "UPDATE drivers SET availability = 'busy' WHERE id = %s",
+                (driver_id,)
+            )
+            # Cancel other immediate PENDING rides of the same passenger
+            cur.execute(
+                """UPDATE rides
+                   SET status = 'CANCELLED'
+                   WHERE user_id = %s AND status = 'PENDING' AND is_scheduled = FALSE AND id != %s""",
+                (ride["user_id"], ride_id)
+            )
 
-        # Cancel other PENDING rides of the same passenger
-        cur.execute(
-            """UPDATE rides
-               SET status = 'CANCELLED'
-               WHERE user_id = %s AND status = 'PENDING' AND id != %s""",
-            (ride["user_id"], ride_id)
-        )
-        cancelled = cur.rowcount
         conn.commit()
 
-        msg = f"Course #{ride_id} acceptée avec succès !"
-        if ride.get("negotiation_status") == "PROPOSED":
-            msg = f"Offre négociée acceptée à {int(round(float(ride['fare'])))} XAF ! Rendez-vous au point de prise en charge."
-        if cancelled > 0:
-            msg += f" {cancelled} autre(s) demande(s) en attente ont été annulées."
+        if is_sch and ride.get("scheduled_time"):
+            st_fmt = ride["scheduled_time"].strftime("%d/%m à %H:%M")
+            type_label = "Navette Aéroport" if ride.get("scheduled_type") == "airport" else ("Navette Port" if ride.get("scheduled_type") == "port" else "Course planifiée")
+            msg = f"✅ {type_label} #{ride_id} garantie et verrouillée pour le {st_fmt} ! Vous restez libre pour vos courses actuelles."
+        else:
+            msg = f"Course #{ride_id} acceptée avec succès !"
+            if ride.get("negotiation_status") == "PROPOSED":
+                msg = f"Offre négociée acceptée à {int(round(float(ride['fare'])))} XAF ! Rendez-vous au point de prise en charge."
+
         flash(msg, "success")
         cur.close()
     except Error:
@@ -1460,6 +1487,16 @@ def driver_accept_ride(ride_id):
     finally:
         conn.close()
     return redirect(url_for("driver_my_rides"))
+
+
+@app.route("/driver/ride/<int:ride_id>/precommit", methods=["POST"])
+@driver_required
+def driver_precommit_ride(ride_id):
+    """
+    Dedicated endpoint: Driver pre-commits to an upcoming scheduled ride or airport/port shuttle.
+    Guarantees the trip for the passenger without locking the driver's current live availability.
+    """
+    return driver_accept_ride(ride_id)
 
 
 @app.route("/driver/ride/<int:ride_id>/counter", methods=["POST"])
@@ -1722,7 +1759,7 @@ def dashboard():
                 FROM rides r
                 LEFT JOIN drivers d ON r.driver_id = d.id
                 LEFT JOIN drivers cd ON r.counter_driver_id = cd.id
-                WHERE r.user_id = %s AND r.status IN ('PENDING', 'ACCEPTED', 'IN_PROGRESS')
+                WHERE r.user_id = %s AND r.status IN ('PENDING', 'ACCEPTED', 'IN_PROGRESS') AND r.is_scheduled = FALSE
                 ORDER BY r.created_at DESC LIMIT 1
                 """,
                 (user_id,)
@@ -1787,11 +1824,32 @@ def dashboard():
                 (user_id, user_id)
             )
             unpaid = cur.fetchall()
+
+            # Upcoming scheduled rides/shuttles for pre-flight & port reminder
+            cur.execute(
+                """
+                SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.vehicle_type,
+                       r.cargo_type, r.cargo_fee, r.status, r.is_scheduled, r.scheduled_time,
+                       r.scheduled_type, r.flight_or_shift_notes, r.created_at,
+                       d.full_name AS driver_name, d.phone AS driver_phone, d.vehicle_info
+                FROM rides r
+                LEFT JOIN drivers d ON r.driver_id = d.id
+                WHERE r.user_id = %s
+                  AND r.is_scheduled = TRUE
+                  AND r.status IN ('PENDING', 'ACCEPTED')
+                ORDER BY r.scheduled_time ASC LIMIT 3
+                """,
+                (user_id,)
+            )
+            scheduled_shuttles = cur.fetchall()
             cur.close()
         except Error:
             flash("Could not load dashboard data.", "warning")
+            scheduled_shuttles = []
         finally:
             conn.close()
+    else:
+        scheduled_shuttles = []
 
     return render_template(
         "dashboard.html",
@@ -1799,6 +1857,7 @@ def dashboard():
         recent=recent,
         unpaid=unpaid,
         active_ride=active_ride,
+        scheduled_shuttles=scheduled_shuttles,
         user_name=session.get("user_name")
     )
 
@@ -1887,6 +1946,45 @@ def request_ride():
             vehicle_type = "taxi"
             flash("Le moto-taxi Bendskin ne peut pas transporter de marchandises de marché ou de gros bagages. Votre course a été automatiquement configurée en Taxi Jaune avec coffre.", "info")
 
+        # Scheduled Early-Morning Airport & Port Shuttles ("Réservation Course à l'Avance")
+        booking_mode = request.form.get("booking_mode", "now").strip().lower()
+        is_scheduled = (booking_mode == "scheduled") or (request.form.get("is_scheduled") in ("1", "true"))
+        scheduled_time = None
+        scheduled_type = "standard"
+        flight_or_shift_notes = request.form.get("flight_or_shift_notes", "").strip()[:150]
+
+        if is_scheduled:
+            scheduled_time_raw = request.form.get("scheduled_time", "").strip()
+            if not scheduled_time_raw:
+                flash("Veuillez sélectionner la date et l'heure de départ pour votre réservation à l'avance.", "danger")
+                return _reload_form()
+            try:
+                # datetime-local sends e.g. 2026-10-17T05:30
+                scheduled_time = datetime.fromisoformat(scheduled_time_raw.replace("Z", ""))
+            except (ValueError, TypeError):
+                flash("Format de date et heure invalide pour la réservation.", "danger")
+                return _reload_form()
+
+            now = datetime.now()
+            if scheduled_time < now + timedelta(minutes=15):
+                flash("L'heure de réservation doit être d'au moins 15 minutes dans le futur.", "danger")
+                return _reload_form()
+            if scheduled_time > now + timedelta(days=7, hours=2):
+                flash("Les réservations à l'avance sont limitées à 7 jours maximum.", "danger")
+                return _reload_form()
+
+            dest_lower = (destination or "").lower()
+            pick_lower = (pickup or "").lower()
+            notes_lower = flight_or_shift_notes.lower()
+            if "aéroport" in dest_lower or "aeroport" in dest_lower or "aéroport" in pick_lower or "aeroport" in pick_lower or "vol" in notes_lower or "flight" in notes_lower or "dla" in notes_lower:
+                scheduled_type = "airport"
+            elif "bonanjo" in dest_lower or "port" in dest_lower or "quai" in notes_lower or "shift" in notes_lower or "port" in notes_lower or "douane" in notes_lower:
+                scheduled_type = "port"
+            else:
+                scheduled_type = request.form.get("scheduled_type", "standard").lower()
+                if scheduled_type not in ("standard", "airport", "port"):
+                    scheduled_type = "standard"
+
         def _reload_form():
             return render_template(
                 "request_ride.html",
@@ -1899,6 +1997,11 @@ def request_ride():
                 selected_destination=request.form.get("destination", ""),
                 selected_vehicle_type=vehicle_type,
                 selected_cargo_type=cargo_type,
+                booking_mode=booking_mode,
+                is_scheduled=is_scheduled,
+                selected_scheduled_time=request.form.get("scheduled_time", ""),
+                selected_flight_notes=flight_or_shift_notes,
+                selected_scheduled_type=scheduled_type,
             )
 
         if not pickup or not destination:
@@ -1973,37 +2076,56 @@ def request_ride():
                 if cur.fetchone():
                     cur.execute(
                         """INSERT INTO rides
-                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status, status)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
-                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status)
+                           (user_id, driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
+                            fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes, status)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'ACCEPTED')""",
+                        (session["user_id"], driver_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
+                         fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes)
                     )
-                    cur.execute(
-                        "UPDATE drivers SET availability = 'busy' WHERE id = %s",
-                        (driver_id,)
-                    )
-                    # Cancel other pending rides of this passenger
-                    cur.execute(
-                        """UPDATE rides SET status = 'CANCELLED'
-                           WHERE user_id = %s AND status = 'PENDING'""",
-                        (session["user_id"],)
-                    )
+                    if not is_scheduled:
+                        cur.execute(
+                            "UPDATE drivers SET availability = 'busy' WHERE id = %s",
+                            (driver_id,)
+                        )
+                        # Cancel only immediate pending rides of this passenger
+                        cur.execute(
+                            """UPDATE rides SET status = 'CANCELLED'
+                               WHERE user_id = %s AND status = 'PENDING' AND is_scheduled = FALSE""",
+                            (session["user_id"],)
+                        )
                     assigned = True
-                    flash(
-                        f"Ride requested and assigned to your chosen driver! "
-                        f"Fare: {int(round(fare))} XAF. Please pay with MoMo / Orange Money from your dashboard.",
-                        "success"
-                    )
+                    if is_scheduled and scheduled_time:
+                        st_fmt = scheduled_time.strftime("%d/%m/%Y à %H:%M")
+                        flash(
+                            f"✈️ Navette planifiée réservée et confirmée auprès de votre chauffeur pour le {st_fmt} ! Tarif convenu : {int(round(fare))} XAF.",
+                            "success"
+                        )
+                    else:
+                        flash(
+                            f"Ride requested and assigned to your chosen driver! "
+                            f"Fare: {int(round(fare))} XAF. Please pay with MoMo / Orange Money from your dashboard.",
+                            "success"
+                        )
                 else:
                     flash("That driver is no longer available. Ride created as PENDING.", "warning")
 
             if not assigned:
                 cur.execute(
                     """INSERT INTO rides
-                       (user_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
-                    (session["user_id"], pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee, fare, original_fare, negotiation_status)
+                       (user_id, pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
+                        fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'PENDING')""",
+                    (session["user_id"], pickup, destination, passengers, vehicle_type, cargo_type, cargo_fee,
+                     fare, original_fare, negotiation_status, is_scheduled, scheduled_time, scheduled_type, flight_or_shift_notes)
                 )
-                if negotiation_status == "PROPOSED":
+                if is_scheduled and scheduled_time:
+                    st_fmt = scheduled_time.strftime("%d/%m/%Y à %H:%M")
+                    label_type = "Navette Aéroport DLA" if scheduled_type == "airport" else ("Navette Port de Douala" if scheduled_type == "port" else "Course planifiée")
+                    flash(
+                        f"✈️ {label_type} réservée pour le {st_fmt} ({pickup} → {destination}) ! Les chauffeurs partenaires peuvent maintenant pré-réserver votre trajet garanti.",
+                        "success"
+                    )
+                elif negotiation_status == "PROPOSED":
                     flash(
                         f"Offre négociée transmise aux chauffeurs : {int(round(fare))} XAF (Tarif standard : {int(round(original_fare))} XAF). En attente d'acceptation !",
                         "success"
@@ -2024,6 +2146,11 @@ def request_ride():
         finally:
             conn.close()
 
+    default_mode = request.args.get("mode", "now")
+    default_type = request.args.get("type", "standard")
+    default_dest = request.args.get("dest", "")
+    default_notes = request.args.get("notes", "")
+
     return render_template(
         "request_ride.html",
         locations=LOCATIONS,
@@ -2032,9 +2159,14 @@ def request_ride():
         douala_markets=DOUALA_MARKETS,
         nearby_drivers=nearby_drivers,
         selected_pickup=selected_pickup,
-        selected_destination="",
-        selected_vehicle_type="taxi",
+        selected_destination=default_dest,
+        selected_vehicle_type="comfort" if default_type == "airport" else "taxi",
         selected_cargo_type="none",
+        booking_mode=default_mode,
+        is_scheduled=(default_mode == "scheduled"),
+        selected_scheduled_time="",
+        selected_flight_notes=default_notes,
+        selected_scheduled_type=default_type,
     )
 
 
@@ -3570,11 +3702,12 @@ def api_driver_alerts():
                 """
                 SELECT r.id, r.pickup, r.destination, r.fare, r.original_fare, r.negotiation_status,
                        r.driver_counter_fare, r.vehicle_type, r.cargo_type, r.cargo_fee, r.passengers,
-                       r.created_at, u.full_name AS rider_name
+                       r.created_at, u.full_name AS rider_name,
+                       r.is_scheduled, r.scheduled_time, r.scheduled_type, r.flight_or_shift_notes
                 FROM rides r
                 JOIN users u ON r.user_id = u.id
                 WHERE r.status = 'PENDING' AND r.driver_id IS NULL
-                ORDER BY r.created_at DESC LIMIT 15
+                ORDER BY r.is_scheduled DESC, r.created_at DESC LIMIT 15
                 """
             )
             for r in cur.fetchall():
@@ -3596,6 +3729,10 @@ def api_driver_alerts():
                     "cargo_fee": int(round(float(r.get("cargo_fee") or 0))),
                     "passengers": r["passengers"],
                     "rider_name": r["rider_name"],
+                    "is_scheduled": bool(r.get("is_scheduled")),
+                    "scheduled_time": r["scheduled_time"].strftime("%d/%m %H:%M") if r.get("scheduled_time") else None,
+                    "scheduled_type": r.get("scheduled_type") or "standard",
+                    "flight_or_shift_notes": r.get("flight_or_shift_notes") or "",
                     "created_at": r["created_at"].isoformat() if r["created_at"] else None
                 })
             cur.close()

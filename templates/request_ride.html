@@ -65,6 +65,100 @@
         <div id="routeHazardCallout" class="route-hazard-callout" style="display:none;"></div>
 
         <form method="POST" action="{{ url_for('request_ride') }}" id="rideForm" novalidate>
+            <!-- Departure Mode Selector (Immediate vs Scheduled Shuttle) -->
+            <input type="hidden" name="booking_mode" id="bookingModeInput" value="{{ booking_mode or 'now' }}">
+            
+            <div class="booking-mode-section">
+                <div class="booking-mode-tabs" role="tablist">
+                    <button type="button" class="booking-mode-tab {% if booking_mode != 'scheduled' %}active{% endif %}" id="tabModeNow" data-mode="now">
+                        <span class="mode-tab-icon">⚡</span>
+                        <div class="mode-tab-text">
+                            <strong>Partir maintenant</strong>
+                            <small>Départ immédiat en ville</small>
+                        </div>
+                    </button>
+                    <button type="button" class="booking-mode-tab {% if booking_mode == 'scheduled' %}active{% endif %}" id="tabModeScheduled" data-mode="scheduled">
+                        <span class="mode-tab-icon">✈️</span>
+                        <div class="mode-tab-text">
+                            <strong>Réserver à l'avance</strong>
+                            <small>Navette Aéroport / Port / Matin</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scheduled Shuttle Options Panel (Collapsible) -->
+            <div class="scheduled-shuttle-panel" id="scheduledShuttlePanel" style="{% if booking_mode != 'scheduled' %}display:none;{% endif %}">
+                <div class="shuttle-panel-header">
+                    <div class="shuttle-header-title-row">
+                        <span class="shuttle-header-icon">✈️</span>
+                        <div>
+                            <strong class="shuttle-header-title">Navettes Matinales &amp; Départs Planifiés</strong>
+                            <span class="shuttle-header-subtitle">Aéroport International DLA, Port Autonome de Douala ou gare ferroviaire</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Early Morning Hotspot Presets -->
+                <div class="shuttle-presets-wrapper">
+                    <span class="shuttle-presets-label">Créneaux &amp; Destinations Express :</span>
+                    <div class="shuttle-preset-chips">
+                        <button type="button" class="shuttle-preset-chip" data-preset="airport" data-dest="Aéroport" data-time="05:30" data-notes="Vol matinal Aéroport DLA" data-type="airport">
+                            ✈️ Vol matinal Aéroport DLA (05:00 - 06:30)
+                        </button>
+                        <button type="button" class="shuttle-preset-chip" data-preset="port" data-dest="Bonanjo" data-time="06:00" data-notes="Shift matinal Port Autonome (Bonanjo)" data-type="port">
+                            ⚓ Shift matinal Port de Douala (06:00 - 07:00)
+                        </button>
+                        <button type="button" class="shuttle-preset-chip" data-preset="station" data-dest="Bessengue" data-time="05:45" data-notes="Départ train / Gare Bessengue" data-type="standard">
+                            🚉 Départ Gare de Bessengue (05:30 - 06:30)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="shuttle-fields-grid">
+                    <div class="form-group shuttle-form-group">
+                        <label for="scheduledTimeInput" class="form-label-bold">
+                            ⏰ Date &amp; Heure de prise en charge <span class="required-star">*</span>
+                        </label>
+                        <input type="datetime-local" id="scheduledTimeInput" name="scheduled_time"
+                               value="{{ selected_scheduled_time or '' }}"
+                               class="shuttle-time-picker">
+                        <small class="shuttle-field-hint">Réservation possible jusqu'à 7 jours à l'avance (minimum 15 min).</small>
+                    </div>
+
+                    <div class="form-group shuttle-form-group">
+                        <label for="scheduledTypeSelect" class="form-label-bold">
+                            🎯 Type de navette
+                        </label>
+                        <select id="scheduledTypeSelect" name="scheduled_type" class="shuttle-type-select">
+                            <option value="airport" {% if selected_scheduled_type == 'airport' %}selected{% endif %}>✈️ Navette Aéroport International de Douala (DLA)</option>
+                            <option value="port" {% if selected_scheduled_type == 'port' %}selected{% endif %}>⚓ Navette Port Autonome de Douala (Bonanjo)</option>
+                            <option value="standard" {% if selected_scheduled_type == 'standard' or not selected_scheduled_type %}selected{% endif %}>📅 Course matinale / Planifiée standard</option>
+                        </select>
+                        <small class="shuttle-field-hint">Permet aux chauffeurs de préparer le coffre et l'itinéraire adapté.</small>
+                    </div>
+                </div>
+
+                <div class="form-group shuttle-form-group" style="margin-bottom:8px;">
+                    <label for="flightNotesInput" class="form-label-bold">
+                        ✈️ N° de vol, relève de quart ou consignes spécifiques (Optionnel)
+                    </label>
+                    <input type="text" id="flightNotesInput" name="flight_or_shift_notes"
+                           value="{{ selected_flight_notes or '' }}"
+                           placeholder="Ex: Vol Air France AF948, Camair-Co, ou Relève Port Quai 4"
+                           maxlength="150" class="shuttle-notes-input">
+                    <small class="shuttle-field-hint">Indiqué au chauffeur pour qu'il suive d'éventuels retards ou spécificités de quai/terminal.</small>
+                </div>
+
+                <div class="shuttle-guarantee-banner">
+                    <span class="guarantee-icon">🛡️</span>
+                    <div class="guarantee-content">
+                        <strong>Garantie Ponctualité Matinale MboaLift</strong>
+                        <p>Les chauffeurs partenaires se pré-engagent sur votre créneau. Vous recevez un rappel de confirmation et les coordonnées directes du chauffeur dès la réservation validée.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Vehicle Type Picker (Bendskin Moto vs Taxi Jaune vs Confort) -->
             <div class="form-group">
                 <label class="form-label-bold">Type de transport</label>
@@ -292,7 +386,11 @@
             </div>
 
             <button type="submit" class="btn-primary btn-block btn-lg" id="submitRide">
-                Commander la course
+                {% if booking_mode == 'scheduled' %}
+                    ✈️ Réserver ma navette planifiée
+                {% else %}
+                    Commander la course
+                {% endif %}
             </button>
         </form>
 

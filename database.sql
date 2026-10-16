@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS rides (
     negotiation_status ENUM('NONE', 'PROPOSED', 'ACCEPTED', 'COUNTERED', 'DECLINED') DEFAULT 'NONE',
     driver_counter_fare DECIMAL(10, 2) DEFAULT NULL,
     counter_driver_id INT DEFAULT NULL,
+    is_scheduled BOOLEAN NOT NULL DEFAULT FALSE,
+    scheduled_time DATETIME DEFAULT NULL,
+    scheduled_type ENUM('standard', 'airport', 'port') NOT NULL DEFAULT 'standard',
+    flight_or_shift_notes VARCHAR(150) DEFAULT NULL,
     status ENUM('PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')
         NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

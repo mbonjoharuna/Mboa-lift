@@ -141,8 +141,27 @@
       cargoSuffix = (lang === 'fr') ? ' avec coffre plein' : ' with full luggage';
     }
 
+    const isScheduled = Boolean(ride.is_scheduled);
+    const scheduledTime = ride.scheduled_time || '';
+    const scheduledType = ride.scheduled_type || 'standard';
+
     let speechText = '';
-    if (isNegotiated) {
+    if (isScheduled) {
+      const timePhrase = scheduledTime ? (lang === 'fr' ? `pour le ${scheduledTime}` : `for ${scheduledTime}`) : '';
+      if (scheduledType === 'airport') {
+        speechText = (lang === 'fr')
+          ? `Nouvelle navette aéroport planifiée ${timePhrase} pour ${fareFormatted} FCFA${cargoSuffix}`
+          : `New airport shuttle scheduled ${timePhrase} for ${fareFormatted} FCFA${cargoSuffix}`;
+      } else if (scheduledType === 'port') {
+        speechText = (lang === 'fr')
+          ? `Nouvelle navette port planifiée ${timePhrase} pour ${fareFormatted} FCFA${cargoSuffix}`
+          : `New port shuttle scheduled ${timePhrase} for ${fareFormatted} FCFA${cargoSuffix}`;
+      } else {
+        speechText = (lang === 'fr')
+          ? `Nouvelle course planifiée ${timePhrase} pour ${fareFormatted} FCFA${cargoSuffix}`
+          : `New ride scheduled ${timePhrase} for ${fareFormatted} FCFA${cargoSuffix}`;
+      }
+    } else if (isNegotiated) {
       if (lang === 'fr') {
         speechText = `Offre négociée reçue à ${fareFormatted} FCFA${cargoSuffix}`;
       } else {
@@ -178,16 +197,32 @@
     const fareFormatted = formatFare(ride.fare);
     const vIcon = ride.vehicle_type === 'bendskin' ? '🏍️' : (ride.vehicle_type === 'comfort' ? '🚗' : '🚕');
     const isNegotiated = Boolean(ride.is_negotiated || ride.negotiation_status === 'PROPOSED');
+    const isScheduled = Boolean(ride.is_scheduled);
+    const scheduledType = ride.scheduled_type || 'standard';
+    const sIcon = scheduledType === 'airport' ? '✈️' : (scheduledType === 'port' ? '⚓' : '📅');
+
+    let titleText = isNegotiated ? 'Offre négociée reçue !' : 'Nouvelle course détectée !';
+    if (isScheduled) {
+      titleText = scheduledType === 'airport' ? 'Navette Aéroport planifiée !' : (scheduledType === 'port' ? 'Navette Port planifiée !' : 'Course planifiée !');
+    }
 
     toast.innerHTML = `
       <div class="toast-voice-indicator">
-        <span class="toast-voice-wave">${isNegotiated ? '🤝' : '📢'}</span>
+        <span class="toast-voice-wave">${isScheduled ? sIcon : (isNegotiated ? '🤝' : '📢')}</span>
       </div>
       <div class="toast-body">
         <div class="toast-title">
-          <span>${vIcon} ${isNegotiated ? 'Offre négociée reçue !' : 'Nouvelle course détectée !'}</span>
+          <span>${vIcon} ${titleText}</span>
           <span class="toast-fare">${fareFormatted} XAF</span>
         </div>
+        ${isScheduled && ride.scheduled_time ? `
+        <div style="font-size:0.75rem;color:#0369a1;font-weight:600;margin-bottom:2px;text-align:left;">
+          ⏰ Départ prévu : ${ride.scheduled_time} (Réservation à l'avance)
+        </div>` : ''}
+        ${isScheduled && ride.flight_or_shift_notes ? `
+        <div style="font-size:0.75rem;background:#f8fafc;color:#334155;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;display:inline-block;margin-bottom:4px;text-align:left;">
+          📝 ${ride.flight_or_shift_notes}
+        </div>` : ''}
         ${isNegotiated && ride.original_fare ? `
         <div style="font-size:0.75rem;color:#64748b;margin-bottom:2px;text-align:left;">
           Tarif initial calculé : <del>${formatFare(ride.original_fare)} XAF</del> (Proposition passager)
@@ -206,9 +241,13 @@
           Passager : ${ride.rider_name || 'Passager MboaLift'} (${ride.passengers || 1} pers.)
         </div>
         <div class="toast-actions">
+          ${isScheduled ? `
+          <form method="POST" action="/driver/ride/${ride.id}/precommit" style="margin:0;">
+            <button type="submit" class="btn-toast-accept" style="background:#047857;">🛡️ Pré-réserver cette navette</button>
+          </form>` : `
           <form method="POST" action="/driver/ride/${ride.id}/accept" style="margin:0;">
             <button type="submit" class="btn-toast-accept">⚡ Accepter ${isNegotiated ? '(' + fareFormatted + ' F)' : ''}</button>
-          </form>
+          </form>`}
           <button type="button" class="btn-toast-counter-toggle" onclick="var b=document.getElementById('toastCounterBox_${ride.id}');if(b){b.style.display=(b.style.display==='none'||!b.style.display)?'flex':'none';}">💬 Contre-proposer</button>
           <button type="button" class="btn-toast-dismiss" title="Refuser l'offre" onclick="this.closest('.driver-voice-toast').classList.remove('active')">✕ Refuser</button>
         </div>
