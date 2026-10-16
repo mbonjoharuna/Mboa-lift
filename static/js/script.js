@@ -616,6 +616,339 @@ function initScheduledShuttleSystem() {
     }
 }
 
+// ============================================================
+// Feature #5: 🎙️ Voice Search & Douala Landmark Recognition
+// ============================================================
+function initVoiceSearchAndLandmarks() {
+    const pickupInput = document.getElementById("pickup");
+    const destInput = document.getElementById("destination");
+    const voiceBtnPickup = document.getElementById("voiceBtnPickup");
+    const voiceBtnDest = document.getElementById("voiceBtnDestination");
+    const pickupStatus = document.getElementById("pickupVoiceStatus");
+    const destStatus = document.getElementById("destVoiceStatus");
+    const pickupBadge = document.getElementById("pickupLandmarkBadge");
+    const destBadge = document.getElementById("destLandmarkBadge");
+    const pickupSuggestions = document.getElementById("pickupSuggestions");
+    const destSuggestions = document.getElementById("destSuggestions");
+    const slangChips = document.querySelectorAll(".slang-chip");
+
+    if (!pickupInput && !destInput) return;
+
+    let activeRecognition = null;
+    let activeTargetField = null;
+
+    // Check Speech Recognition support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function getSpeechLang() {
+        const lang = (window.MboaLiftI18n && window.MboaLiftI18n.getCurrentLanguage)
+            ? window.MboaLiftI18n.getCurrentLanguage()
+            : 'fr';
+        return lang === 'en' ? 'en-US' : 'fr-FR';
+    }
+
+    function setStatus(targetField, text, isListening, isError) {
+        const statusEl = (targetField === 'pickup') ? pickupStatus : destStatus;
+        if (!statusEl) return;
+        const textSpan = statusEl.querySelector('.voice-status-text');
+        if (textSpan) textSpan.textContent = text;
+        if (isListening) {
+            statusEl.classList.add('listening');
+            statusEl.classList.remove('error');
+        } else if (isError) {
+            statusEl.classList.remove('listening');
+            statusEl.classList.add('error');
+        } else {
+            statusEl.classList.remove('listening', 'error');
+        }
+    }
+
+    function setBadge(targetField, landmarkName, canonicalArea, icon) {
+        const badgeEl = (targetField === 'pickup') ? pickupBadge : destBadge;
+        if (!badgeEl) return;
+        if (!landmarkName) {
+            badgeEl.style.display = 'none';
+            badgeEl.innerHTML = '';
+            return;
+        }
+
+        const iconStr = icon || '📍';
+        badgeEl.style.display = 'flex';
+        badgeEl.innerHTML = `
+            <span class="badge-icon">${iconStr}</span>
+            <div class="badge-text-group">
+                <span class="badge-sub">${_t("Repère identifié :")}</span>
+                <strong class="badge-title">${landmarkName}</strong>
+            </div>
+            <span class="badge-arrow">➔</span>
+            <span class="badge-canonical">${canonicalArea}</span>
+        `;
+    }
+
+    function processVoiceResult(targetField, transcript) {
+        if (!transcript) return;
+        const inputEl = (targetField === 'pickup') ? pickupInput : destInput;
+        if (!inputEl) return;
+
+        // Strip conversational prefixes: "dépose-moi à", "je vais à", etc.
+        const cleaned = transcript.replace(/^(dépose[- ]moi\s+(à|au|vers|a)?|je\s+vais\s+(à|au|vers|a)?|amène[- ]moi\s+(à|au|vers|a)?|direction\s+|au\s+niveau\s+de\s+|à\s+la\s+|à\s+|au\s+|a\s+la\s+|a\s+)/gi, '').trim();
+
+        // Call backend landmark matching API
+        fetch('/api/landmarks/search?q=' + encodeURIComponent(cleaned || transcript))
+            .then(res => res.json())
+            .then(data => {
+                let targetArea = data.matched_area;
+                let landmarkObj = (data.landmarks && data.landmarks.length > 0) ? data.landmarks[0] : null;
+
+                if (!targetArea && landmarkObj) {
+                    targetArea = landmarkObj.area;
+                }
+
+                if (targetArea) {
+                    inputEl.value = targetArea;
+                    const matchedName = landmarkObj ? landmarkObj.name : targetArea;
+                    const icon = landmarkObj ? landmarkObj.icon : '✨';
+                    setBadge(targetField, matchedName, targetArea, icon);
+                    if (window.focusDoualaLandmark) {
+                        window.focusDoualaLandmark(landmarkObj || targetArea, targetField);
+                    }
+                } else {
+                    inputEl.value = cleaned || transcript;
+                    setBadge(targetField, cleaned || transcript, cleaned || transcript, '🎙️');
+                }
+
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                setStatus(targetField, _t("Reconnu : ") + (targetArea || cleaned || transcript), false, false);
+            })
+            .catch(() => {
+                inputEl.value = cleaned || transcript;
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+    }
+
+    function startVoiceRecognition(targetField) {
+        const btn = (targetField === 'pickup') ? voiceBtnPickup : voiceBtnDest;
+        const inputEl = (targetField === 'pickup') ? pickupInput : destInput;
+
+        if (!SpeechRecognition) {
+            setStatus(targetField, _t("Micro non supporté - Utilisez les repères express"), false, true);
+            if (inputEl) inputEl.focus();
+            showLandmarkSuggestions(targetField, '');
+            return;
+        }
+
+        if (activeRecognition) {
+            try { activeRecognition.stop(); } catch (e) {}
+            activeRecognition = null;
+        }
+
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.lang = getSpeechLang();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function () {
+                activeRecognition = recognition;
+                activeTargetField = targetField;
+                if (btn) btn.classList.add('listening');
+                setStatus(targetField, _t("Écoute en cours... Parlez (ex: Total Ndokoti)"), true, false);
+            };
+
+            recognition.onresult = function (event) {
+                if (event.results && event.results[0] && event.results[0][0]) {
+                    const transcript = event.results[0][0].transcript;
+                    processVoiceResult(targetField, transcript);
+                }
+            };
+
+            recognition.onerror = function (event) {
+                console.warn('Speech recognition error:', event.error);
+                if (btn) btn.classList.remove('listening');
+                if (event.error === 'not-allowed') {
+                    setStatus(targetField, _t("Micro bloqué. Autorisez l'accès micro."), false, true);
+                } else if (event.error === 'no-speech') {
+                    setStatus(targetField, _t("Aucune voix détectée. Réessayez."), false, true);
+                } else {
+                    setStatus(targetField, _t("Erreur de détection vocale."), false, true);
+                }
+                activeRecognition = null;
+            };
+
+            recognition.onend = function () {
+                if (btn) btn.classList.remove('listening');
+                activeRecognition = null;
+                setTimeout(() => {
+                    setStatus(targetField, _t("Micro prêt"), false, false);
+                }, 3500);
+            };
+
+            recognition.start();
+        } catch (err) {
+            console.warn('SpeechRecognition start failed:', err);
+            if (btn) btn.classList.remove('listening');
+            setStatus(targetField, _t("Erreur micro. Utilisez les repères express."), false, true);
+        }
+    }
+
+    if (voiceBtnPickup) {
+        voiceBtnPickup.addEventListener('click', function (e) {
+            e.preventDefault();
+            startVoiceRecognition('pickup');
+        });
+    }
+
+    if (voiceBtnDest) {
+        voiceBtnDest.addEventListener('click', function (e) {
+            e.preventDefault();
+            startVoiceRecognition('destination');
+        });
+    }
+
+    // Auto-suggest landmarks as user types
+    function showLandmarkSuggestions(targetField, query) {
+        const container = (targetField === 'pickup') ? pickupSuggestions : destSuggestions;
+        if (!container) return;
+
+        fetch('/api/landmarks/search?q=' + encodeURIComponent(query || ''))
+            .then(res => res.json())
+            .then(data => {
+                const list = (data.landmarks || []).slice(0, 6);
+                if (list.length === 0) {
+                    container.style.display = 'none';
+                    container.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="landmark-suggestions-header">
+                        <span>📍 ${_t("Repères Douala recommandés :")}</span>
+                        <button type="button" class="btn-close-suggestions" title="Fermer">✕</button>
+                    </div>
+                    <div class="landmark-suggestions-list">
+                        ${list.map(lm => `
+                            <div class="landmark-suggestion-item" data-landmark="${lm.name}" data-area="${lm.area}" data-lat="${lm.lat}" data-lng="${lm.lng}">
+                                <span class="suggestion-icon">${lm.icon}</span>
+                                <div class="suggestion-info">
+                                    <strong class="suggestion-name">${lm.name}</strong>
+                                    <span class="suggestion-tip">${lm.tip}</span>
+                                </div>
+                                <span class="suggestion-area-badge">${lm.area}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.style.display = 'block';
+
+                container.querySelectorAll('.landmark-suggestion-item').forEach(item => {
+                    item.addEventListener('click', function () {
+                        const lmName = this.getAttribute('data-landmark');
+                        const lmArea = this.getAttribute('data-area');
+                        const lat = parseFloat(this.getAttribute('data-lat'));
+                        const lng = parseFloat(this.getAttribute('data-lng'));
+                        const icon = this.querySelector('.suggestion-icon').textContent;
+
+                        const inputEl = (targetField === 'pickup') ? pickupInput : destInput;
+                        if (inputEl) {
+                            inputEl.value = lmArea;
+                            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+
+                        setBadge(targetField, lmName, lmArea, icon);
+                        if (window.focusDoualaLandmark) {
+                            window.focusDoualaLandmark({ name: lmName, area: lmArea, lat: lat, lng: lng, icon: icon }, targetField);
+                        }
+                        container.style.display = 'none';
+                    });
+                });
+
+                const closeBtn = container.querySelector('.btn-close-suggestions');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function () {
+                        container.style.display = 'none';
+                    });
+                }
+            })
+            .catch(() => {
+                container.style.display = 'none';
+            });
+    }
+
+    let searchDebouncePickup = null;
+    let searchDebounceDest = null;
+
+    if (pickupInput) {
+        pickupInput.addEventListener('input', function () {
+            const val = this.value.trim();
+            if (searchDebouncePickup) clearTimeout(searchDebouncePickup);
+            searchDebouncePickup = setTimeout(() => {
+                if (val.length >= 2) {
+                    showLandmarkSuggestions('pickup', val);
+                } else if (pickupSuggestions) {
+                    pickupSuggestions.style.display = 'none';
+                }
+            }, 180);
+        });
+    }
+
+    if (destInput) {
+        destInput.addEventListener('input', function () {
+            const val = this.value.trim();
+            if (searchDebounceDest) clearTimeout(searchDebounceDest);
+            searchDebounceDest = setTimeout(() => {
+                if (val.length >= 2) {
+                    showLandmarkSuggestions('destination', val);
+                } else if (destSuggestions) {
+                    destSuggestions.style.display = 'none';
+                }
+            }, 180);
+        });
+    }
+
+    // Hide suggestions on click outside
+    document.addEventListener('click', function (e) {
+        if (pickupSuggestions && !pickupSuggestions.contains(e.target) && e.target !== pickupInput && e.target !== voiceBtnPickup) {
+            pickupSuggestions.style.display = 'none';
+        }
+        if (destSuggestions && !destSuggestions.contains(e.target) && e.target !== destInput && e.target !== voiceBtnDest) {
+            destSuggestions.style.display = 'none';
+        }
+    });
+
+    // Wire up Slang Bar quick chips
+    slangChips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            const landmark = this.getAttribute('data-landmark');
+            const area = this.getAttribute('data-area');
+            const lat = parseFloat(this.getAttribute('data-lat'));
+            const lng = parseFloat(this.getAttribute('data-lng'));
+            const icon = this.querySelector('.chip-icon') ? this.querySelector('.chip-icon').textContent : '📍';
+
+            let targetField = 'destination';
+            if (!pickupInput.value.trim()) {
+                targetField = 'pickup';
+            }
+
+            const inputEl = (targetField === 'pickup') ? pickupInput : destInput;
+            if (inputEl) {
+                inputEl.value = area;
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            setBadge(targetField, landmark, area, icon);
+
+            if (window.focusDoualaLandmark) {
+                window.focusDoualaLandmark({ name: landmark, area: area, lat: lat, lng: lng, icon: icon }, targetField);
+            }
+        });
+    });
+}
+
 // ---------- Client-side validation helpers ----------
 function validateRegisterForm() {
     const form = document.getElementById("registerForm");
@@ -647,6 +980,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     initScheduledShuttleSystem();
+    initVoiceSearchAndLandmarks();
 
     // Ride form basic check
     const rideForm = document.getElementById("rideForm");

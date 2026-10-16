@@ -738,6 +738,25 @@
       'Choisissez votre opérateur Mobile Money :': 'Choisissez votre opérateur Mobile Money :',
       'Option 2 : Composer directement par syntaxe USSD (Sans connexion)': 'Option 2 : Composer directement par syntaxe USSD (Sans connexion)',
       'Statut de l\'ensemble du groupe': 'Statut de l\'ensemble du groupe',
+
+      // Feature #5: Voice Search & Douala Landmarks
+      'Voice Search & Douala Landmarks': 'Recherche Vocale & Repères Douala',
+      'Voice Search &amp; Douala Landmarks': 'Recherche Vocale & Repères Douala',
+      'Speak into the mic or click a popular landmark to set it in 1 click:': 'Parlez au micro ou cliquez un repère populaire pour le définir en 1 clic :',
+      'Point de départ (Pickup)': 'Point de départ (Pickup)',
+      'Point d\'arrivée (Destination)': 'Point d\'arrivée (Destination)',
+      'Mic ready': 'Micro prêt',
+      'Listening... Speak now (e.g. Total Ndokoti)': 'Écoute en cours... Parlez (ex: Total Ndokoti)',
+      'Recognized: ': 'Reconnu : ',
+      'Mic not supported - Use express landmarks': 'Micro non supporté - Utilisez les repères express',
+      'Mic blocked. Please allow microphone access.': 'Micro bloqué. Autorisez l\'accès micro.',
+      'No voice detected. Please try again.': 'Aucune voix détectée. Réessayez.',
+      'Voice detection error.': 'Erreur de détection vocale.',
+      'Mic error. Use express landmarks.': 'Erreur micro. Utilisez les repères express.',
+      'Landmark identified:': 'Repère identifié :',
+      'Recommended Douala Landmarks:': 'Repères Douala recommandés :',
+      'Speak to dictate pickup location': 'Parler pour dicter le lieu de départ',
+      'Speak to dictate destination': 'Parler pour dicter la destination',
     },
 
     // French -> English (allows flawless switching back to English on French templates!)
@@ -1419,6 +1438,28 @@
       'Course planifiée !': 'Scheduled ride!',
       'Veuillez sélectionner une date et heure de départ pour votre navette planifiée.': 'Please select a departure date and time for your scheduled shuttle.',
       'La réservation à l\'avance doit être fixée au moins 15 minutes dans le futur.': 'Advance bookings must be scheduled at least 15 minutes into the future.',
+
+      // Feature #5: Voice Search & Douala Landmarks
+      'Recherche Vocale & Repères Douala': 'Voice Search & Douala Landmarks',
+      'Recherche Vocale &amp; Repères Douala': 'Voice Search & Douala Landmarks',
+      'Parlez au micro ou cliquez un repère populaire pour le définir en 1 clic :': 'Speak into the mic or click a popular landmark to set it in 1 click:',
+      'Point de départ (Pickup)': 'Pickup location (Départ)',
+      'Point d\'arrivée (Destination)': 'Destination (Arrivée)',
+      'Micro prêt': 'Mic ready',
+      'Écoute en cours... Parlez (ex: Total Ndokoti)': 'Listening... Speak now (e.g. Total Ndokoti)',
+      'Reconnu : ': 'Recognized: ',
+      'Micro non supporté - Utilisez les repères express': 'Mic not supported - Use express landmarks',
+      'Micro bloqué. Autorisez l\'accès micro.': 'Mic blocked. Please allow microphone access.',
+      'Aucune voix détectée. Réessayez.': 'No voice detected. Please try again.',
+      'Erreur de détection vocale.': 'Voice detection error.',
+      'Erreur micro. Utilisez les repères express.': 'Mic error. Use express landmarks.',
+      'Repère identifié :': 'Landmark identified:',
+      'Repères Douala recommandés :': 'Recommended Douala Landmarks:',
+      'Parler pour dicter le lieu de départ': 'Speak to dictate pickup location',
+      'Parler pour dicter la destination': 'Speak to dictate destination',
+      'Reconnaissance instantanée des carrefours, stations, marchés et repères doualais.': 'Instant recognition of Douala junctions, stations, markets and landmarks.',
+      'Dites ou tapez un repère : ex. Total Ndokoti, Ancien Dalip, Akwa...': 'Speak or type a landmark: e.g. Total Ndokoti, Ancien Dalip, Akwa...',
+      'Dites ou tapez un repère : ex. Deux Églises, Aéroport DLA, Bonamoussadi...': 'Speak or type a landmark: e.g. Deux Églises, DLA Airport, Bonamoussadi...',
     }
   };
 

@@ -325,6 +325,7 @@ def inject_locale():
         douala_weather_all=DOUALA_WEATHER_CONDITIONS,
         cargo_options=CARGO_OPTIONS,
         douala_markets=DOUALA_MARKETS,
+        douala_landmarks=DOUALA_LANDMARKS,
     )
 
 
@@ -356,12 +357,326 @@ DOUALA_COORDINATES = {
 }
 
 DOUALA_LANDMARKS = [
-    {"name": "Pont du Wouri", "lat": 4.0610, "lng": 9.6845, "type": "bridge", "icon": "🌉", "tip": "Liaison vitale Bonabéri ↔ Deido"},
-    {"name": "Rond-Point Deido", "lat": 4.0632, "lng": 9.7118, "type": "roundabout", "icon": "🔄", "tip": "Carrefour stratégique Douala Nord"},
-    {"name": "Carrefour Ndokoti", "lat": 4.0441, "lng": 9.7397, "type": "junction", "icon": "🚦", "tip": "Hub multimodal Bendskins & Taxis"},
-    {"name": "Boulevard de la Liberté (Akwa)", "lat": 4.0515, "lng": 9.6965, "type": "commercial", "icon": "🛍️", "tip": "Centre d'affaires & boutiques Akwa"},
-    {"name": "Place du Gouvernement (Bonanjo)", "lat": 4.0428, "lng": 9.6885, "type": "admin", "icon": "🏛️", "tip": "Sièges administratifs & Palais de Justice"},
-    {"name": "Aéroport Int. de Douala", "lat": 4.0118, "lng": 9.7194, "type": "airport", "icon": "✈️", "tip": "Hub aérien international (DLA)"},
+    {
+        "name": "Total Énergie Ndokoti",
+        "area": "Ndokoti",
+        "lat": 4.0435,
+        "lng": 9.7402,
+        "type": "station",
+        "icon": "⛽",
+        "tip": "Station-service stratégique au Carrefour Ndokoti",
+        "aliases": ["total energie ndokoti", "total ndokoti", "station total ndokoti", "energie ndokoti", "total de ndokoti"]
+    },
+    {
+        "name": "Ancien Dalip (Akwa)",
+        "area": "Akwa",
+        "lat": 4.0512,
+        "lng": 9.6958,
+        "type": "culture",
+        "icon": "🏛️",
+        "tip": "Repère commercial historique Boulevard de la Liberté",
+        "aliases": ["ancien dalip akwa", "ancien dalip", "dalip akwa", "dalip", "cinema dalip", "dalip liberté"]
+    },
+    {
+        "name": "Mobil Guinness (Bépanda)",
+        "area": "Bépanda",
+        "lat": 4.0581,
+        "lng": 9.7314,
+        "type": "industry",
+        "icon": "🏭",
+        "tip": "Carrefour emblématique près de la Brasserie Guinness",
+        "aliases": ["mobil guinness", "guinness", "usine guinness", "carrefour guinness", "brasseries guinness", "mobil guiness", "guiness"]
+    },
+    {
+        "name": "Carrefour Deux Églises (Bépanda)",
+        "area": "Bépanda",
+        "lat": 4.0621,
+        "lng": 9.7275,
+        "type": "junction",
+        "icon": "⛪",
+        "tip": "Carrefour populaire et animé de Bépanda",
+        "aliases": ["carrefour deux eglises", "deux eglises", "2 eglises", "carrefour deux églises", "deux églises", "2 églises"]
+    },
+    {
+        "name": "Carrefour Ndokoti",
+        "area": "Ndokoti",
+        "lat": 4.0441,
+        "lng": 9.7397,
+        "type": "junction",
+        "icon": "🚦",
+        "tip": "Hub multimodal Bendskins, Taxis & axe Bassa",
+        "aliases": ["carrefour ndokoti", "rond point ndokoti", "ndokoti carrefour", "marche ndokoti"]
+    },
+    {
+        "name": "Douche Municipale (Akwa)",
+        "area": "Akwa",
+        "lat": 4.0478,
+        "lng": 9.6942,
+        "type": "junction",
+        "icon": "🚿",
+        "tip": "Carrefour central de liaison Akwa ↔ Bonanjo",
+        "aliases": ["douche municipale", "la douche", "carrefour douche", "douche akwa"]
+    },
+    {
+        "name": "Boulangerie Zepol (Akwa)",
+        "area": "Akwa",
+        "lat": 4.0528,
+        "lng": 9.6985,
+        "type": "commercial",
+        "icon": "🥐",
+        "tip": "Point de ralliement et repère mythique d'Akwa",
+        "aliases": ["boulangerie zepol", "zepol", "zepol akwa", "carrefour zepol"]
+    },
+    {
+        "name": "Boulevard de la Liberté (Akwa)",
+        "area": "Akwa",
+        "lat": 4.0515,
+        "lng": 9.6965,
+        "type": "commercial",
+        "icon": "🛍️",
+        "tip": "Centre d'affaires & boutiques Akwa",
+        "aliases": ["boulevard de la liberte", "boulevard de la liberté", "boulevard liberte", "rue liberte akwa"]
+    },
+    {
+        "name": "Hôtel Akwa Palace",
+        "area": "Akwa",
+        "lat": 4.0505,
+        "lng": 9.6961,
+        "type": "hotel",
+        "icon": "🏨",
+        "tip": "Grand hôtel historique au cœur d'Akwa",
+        "aliases": ["hotel akwa palace", "hotel palace", "akwa palace", "palace akwa"]
+    },
+    {
+        "name": "Rond-Point Salle des Fêtes (Akwa)",
+        "area": "Akwa",
+        "lat": 4.0545,
+        "lng": 9.7010,
+        "type": "roundabout",
+        "icon": "🎭",
+        "tip": "Rond-point festif et commercial Akwa Nord",
+        "aliases": ["salle des fetes", "salle des fêtes", "rond point salle des fetes", "salle des fetes akwa"]
+    },
+    {
+        "name": "Rond-Point Deido",
+        "area": "Deido",
+        "lat": 4.0632,
+        "lng": 9.7118,
+        "type": "roundabout",
+        "icon": "🔄",
+        "tip": "Nœud routier stratégique vers Bonabéri et le Nord",
+        "aliases": ["rond point deido", "rond-point deido", "deido rond point", "statue deido"]
+    },
+    {
+        "name": "Rue de la Joie (Deido)",
+        "area": "Deido",
+        "lat": 4.0645,
+        "lng": 9.7142,
+        "type": "culture",
+        "icon": "🎶",
+        "tip": "Haut lieu de la vie nocturne et des braises de Douala",
+        "aliases": ["rue de la joie", "rue de la joie deido", "joie deido"]
+    },
+    {
+        "name": "Pont du Wouri",
+        "area": "Bonabéri",
+        "lat": 4.0610,
+        "lng": 9.6845,
+        "type": "bridge",
+        "icon": "🌉",
+        "tip": "Liaison vitale Bonabéri ↔ Deido sur le Wouri",
+        "aliases": ["pont du wouri", "pont wouri", "premier pont", "deuxieme pont", "wouri bridge"]
+    },
+    {
+        "name": "Quatre Étages (Bonabéri)",
+        "area": "Bonabéri",
+        "lat": 4.0755,
+        "lng": 9.6612,
+        "type": "junction",
+        "icon": "🏢",
+        "tip": "Carrefour majeur sur l'axe principal de Bonabéri",
+        "aliases": ["quatre etages", "quatre étages", "4 etages", "4 étages", "carrefour 4 etages"]
+    },
+    {
+        "name": "Carrefour Mutzig (Bonabéri)",
+        "area": "Bonabéri",
+        "lat": 4.0780,
+        "lng": 9.6620,
+        "type": "junction",
+        "icon": "🍻",
+        "tip": "Carrefour commercial et populaire de Bonabéri",
+        "aliases": ["carrefour mutzig", "mutzig", "mutzig bonaberi", "ancien mutzig"]
+    },
+    {
+        "name": "Marché Mboppi (Bépanda)",
+        "area": "Bépanda",
+        "lat": 4.0538,
+        "lng": 9.7265,
+        "type": "market",
+        "icon": "🛒",
+        "tip": "Grand marché vivres et commerce de gros",
+        "aliases": ["marche mboppi", "marché mboppi", "mboppi", "mbopi"]
+    },
+    {
+        "name": "Stade de la Réunification (Bépanda)",
+        "area": "Bépanda",
+        "lat": 4.0592,
+        "lng": 9.7289,
+        "type": "stadium",
+        "icon": "⚽",
+        "tip": "Stade Omnisports historique de Bépanda",
+        "aliases": ["stade bepanda", "stade de bepanda", "stade réunification", "stade reunification", "omnisports bepanda"]
+    },
+    {
+        "name": "Place du Gouvernement (Bonanjo)",
+        "area": "Bonanjo",
+        "lat": 4.0428,
+        "lng": 9.6885,
+        "type": "admin",
+        "icon": "🏛️",
+        "tip": "Centre civique, banques et Palais de Justice",
+        "aliases": ["place du gouvernement", "place gouvernement", "palais de justice", "tribunal bonanjo"]
+    },
+    {
+        "name": "Port Autonome de Douala (Bonanjo)",
+        "area": "Bonanjo",
+        "lat": 4.0410,
+        "lng": 9.6820,
+        "type": "port",
+        "icon": "⚓",
+        "tip": "Premier pôle portuaire du Cameroun et zone sous douane",
+        "aliases": ["port autonome", "port de douala", "gare maritime", "quai port", "direction du port"]
+    },
+    {
+        "name": "Gare Centrale de Bessengue",
+        "area": "Deido",
+        "lat": 4.0558,
+        "lng": 9.7082,
+        "type": "station",
+        "icon": "🚉",
+        "tip": "Gare ferroviaire Camrail et feu rouge Bessengue",
+        "aliases": ["gare de bessengue", "gare bessengue", "feu rouge bessengue", "bessengue", "camrail"]
+    },
+    {
+        "name": "Aéroport Int. de Douala (DLA)",
+        "area": "Aéroport",
+        "lat": 4.0118,
+        "lng": 9.7194,
+        "type": "airport",
+        "icon": "✈️",
+        "tip": "Hub aérien international (DLA)",
+        "aliases": ["aeroport", "aéroport", "aeroport douala", "aeroport international", "dla", "terminal aeroport"]
+    },
+    {
+        "name": "Rond-Point Maetur (Bonamoussadi)",
+        "area": "Bonamoussadi",
+        "lat": 4.0882,
+        "lng": 9.7345,
+        "type": "roundabout",
+        "icon": "🔄",
+        "tip": "Cœur résidentiel et commerces de Bonamoussadi",
+        "aliases": ["rond point maetur", "rond-point maetur", "maetur", "maetur bonamoussadi"]
+    },
+    {
+        "name": "Carrefour Denver (Bonamoussadi)",
+        "area": "Bonamoussadi",
+        "lat": 4.0921,
+        "lng": 9.7388,
+        "type": "junction",
+        "icon": "🚦",
+        "tip": "Secteur branché et résidentiel de Douala 5e",
+        "aliases": ["carrefour denver", "denver", "denver bonamoussadi"]
+    },
+    {
+        "name": "Université de Douala (ESSEC / Ange Raphaël)",
+        "area": "Makepe",
+        "lat": 4.0782,
+        "lng": 9.7410,
+        "type": "university",
+        "icon": "🎓",
+        "tip": "Campus universitaire et école de commerce ESSEC",
+        "aliases": ["universite de douala", "université", "essec", "campus ange raphael", "ange raphael", "universite ange raphael"]
+    },
+    {
+        "name": "Hôpital Général de Douala (Makepe)",
+        "area": "Makepe",
+        "lat": 4.0845,
+        "lng": 9.7455,
+        "type": "hospital",
+        "icon": "🏥",
+        "tip": "Hôpital de référence et urgences Douala Nord",
+        "aliases": ["hopital general", "hôpital général", "hopital de makepe", "carrefour hopital general"]
+    },
+    {
+        "name": "Marché Central (New Bell)",
+        "area": "New Bell",
+        "lat": 4.0325,
+        "lng": 9.7161,
+        "type": "market",
+        "icon": "🛍️",
+        "tip": "Grand pôle commercial textiles & vivres",
+        "aliases": ["marche central", "marché central", "new bell central"]
+    },
+    {
+        "name": "Marché Sandaga (New Bell)",
+        "area": "New Bell",
+        "lat": 4.0362,
+        "lng": 9.7115,
+        "type": "market",
+        "icon": "🥬",
+        "tip": "Grossistes vivriers et légumes frais",
+        "aliases": ["marche sandaga", "marché sandaga", "sandaga"]
+    },
+    {
+        "name": "Carrefour Agip (New Bell)",
+        "area": "New Bell",
+        "lat": 4.0392,
+        "lng": 9.7198,
+        "type": "junction",
+        "icon": "🚦",
+        "tip": "Carrefour carrefour reliant New Bell à Ndokoti",
+        "aliases": ["carrefour agip", "agip", "station agip", "agip new bell"]
+    },
+    {
+        "name": "Clinique Soppo Priso (Bonapriso)",
+        "area": "Bonapriso",
+        "lat": 4.0315,
+        "lng": 9.6962,
+        "type": "hospital",
+        "icon": "🏥",
+        "tip": "Quartier résidentiel et médical de Bonapriso",
+        "aliases": ["soppo priso", "clinique soppo priso", "rue tokoto", "bonapriso soppo"]
+    },
+    {
+        "name": "Rue Mandessi Bell (Bali)",
+        "area": "Bali",
+        "lat": 4.0381,
+        "lng": 9.6953,
+        "type": "junction",
+        "icon": "🛣️",
+        "tip": "Liaison historique Akwa-Bonanjo vers Koumassi",
+        "aliases": ["mandessi bell", "rue mandessi bell", "bali mandessi"]
+    },
+    {
+        "name": "Complexe Sportif Japoma",
+        "area": "Japoma",
+        "lat": 3.9875,
+        "lng": 9.8025,
+        "type": "stadium",
+        "icon": "🏟️",
+        "tip": "Grand stade omnisports Japoma & sortie Yaoundé",
+        "aliases": ["stade japoma", "japoma", "complexe japoma", "entree japoma", "total nyalla"]
+    },
+    {
+        "name": "Carrefour Cité des Palmiers",
+        "area": "Cité des Palmiers",
+        "lat": 4.0508,
+        "lng": 9.7558,
+        "type": "junction",
+        "icon": "🌴",
+        "tip": "Zone urbaine Douala 3e & carrefour Bille",
+        "aliases": ["cite des palmiers", "cité des palmiers", "carrefour palmiers", "bille"]
+    }
 ]
 
 # Coded Douala locations for offline USSD dialing (*999*1*2*2#)
@@ -667,13 +982,48 @@ NEARBY = {
 
 
 def normalize_location(name):
-    """Match typed text to a known Douala location (case-insensitive)."""
+    """
+    Match typed or spoken text to a known Douala location (case-insensitive).
+    Supports exact neighborhood matches, alias/landmark matching,
+    and colloquial Douala street slang (e.g. 'Total Énergie Ndokoti' -> 'Ndokoti').
+    """
     if not name:
         return None
     cleaned = name.strip()
+    # 1. Direct match with canonical locations
     for loc in LOCATIONS:
         if loc.lower() == cleaned.lower():
             return loc
+
+    cleaned_lower = cleaned.lower()
+
+    # Remove common Douala speech prefixes: "dépose-moi à", "je vais à", "vers", "au niveau de", "carrefour"
+    spoken_cleaned = re.sub(
+        r"^(dépose[- ]moi\s+(à|au|vers|a)?|je\s+vais\s+(à|au|vers|a)?|amène[- ]moi\s+(à|au|vers|a)?|direction\s+|au\s+niveau\s+de\s+|à\s+la\s+|à\s+|au\s+|a\s+la\s+|a\s+)",
+        "",
+        cleaned_lower,
+        flags=re.IGNORECASE
+    ).strip()
+
+    # Check direct canonical match on stripped speech
+    for loc in LOCATIONS:
+        if loc.lower() == spoken_cleaned:
+            return loc
+
+    # 2. Match against Douala Landmarks & Slang
+    for lm in DOUALA_LANDMARKS:
+        lm_name_lower = lm["name"].lower()
+        if lm_name_lower in cleaned_lower or lm_name_lower in spoken_cleaned:
+            return lm["area"]
+        for alias in lm.get("aliases", []):
+            if alias in cleaned_lower or alias in spoken_cleaned or cleaned_lower in alias:
+                return lm["area"]
+
+    # 3. Keyword / partial search across canonical locations
+    for loc in LOCATIONS:
+        if loc.lower() in cleaned_lower or loc.lower() in spoken_cleaned:
+            return loc
+
     return None
 
 
@@ -4074,6 +4424,63 @@ def api_map_data():
         "landmarks": DOUALA_LANDMARKS,
         "active_drivers": active_drivers,
         "available_rides": available_rides
+    })
+
+
+@app.route("/api/landmarks/search")
+def api_landmarks_search():
+    """
+    Search Douala landmarks and slang points of reference by speech or text query.
+    Returns matched landmarks with coordinates, canonical area, and tip.
+    """
+    q = (request.args.get("q") or "").strip().lower()
+    if not q:
+        return jsonify({
+            "query": "",
+            "landmarks": DOUALA_LANDMARKS,
+            "total": len(DOUALA_LANDMARKS)
+        })
+
+    # Strip conversational Douala speech prefixes
+    cleaned_q = re.sub(
+        r"^(dépose[- ]moi\s+(à|au|vers|a)?|je\s+vais\s+(à|au|vers|a)?|amène[- ]moi\s+(à|au|vers|a)?|direction\s+|au\s+niveau\s+de\s+|à\s+la\s+|à\s+|au\s+|a\s+la\s+|a\s+)",
+        "",
+        q,
+        flags=re.IGNORECASE
+    ).strip()
+
+    matches = []
+    for lm in DOUALA_LANDMARKS:
+        lm_name = lm["name"].lower()
+        lm_area = lm["area"].lower()
+        aliases = [a.lower() for a in lm.get("aliases", [])]
+
+        score = 0
+        if lm_name == cleaned_q or cleaned_q in lm_name:
+            score += 10
+        if any(a == cleaned_q for a in aliases):
+            score += 12
+        elif any(cleaned_q in a or a in cleaned_q for a in aliases):
+            score += 8
+        if lm_area == cleaned_q:
+            score += 6
+        elif cleaned_q in lm_area:
+            score += 4
+
+        if score > 0:
+            matches.append((score, lm))
+
+    matches.sort(key=lambda x: x[0], reverse=True)
+    results = [m[1] for m in matches]
+
+    # Check canonical neighborhood match
+    canonical_match = normalize_location(cleaned_q) or normalize_location(q)
+    return jsonify({
+        "query": q,
+        "cleaned_query": cleaned_q,
+        "matched_area": canonical_match,
+        "landmarks": results,
+        "total": len(results)
     })
 
 

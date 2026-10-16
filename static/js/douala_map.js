@@ -38,12 +38,30 @@
   };
 
   const DOUALA_LANDMARKS = [
-    { name: 'Pont du Wouri', coords: [4.0610, 9.6845], icon: '🌉', tip: 'Pont du Wouri · Axe stratégique Bonabéri ↔ Deido' },
-    { name: 'Rond-Point Deido', coords: [4.0632, 9.7118], icon: '🔄', tip: 'Rond-Point Deido · Nœud routier majeur' },
-    { name: 'Carrefour Ndokoti', coords: [4.0441, 9.7397], icon: '🚦', tip: 'Carrefour Ndokoti · Hub Bendskin & Taxis' },
-    { name: 'Akwa (Boulevard Liberté)', coords: [4.0515, 9.6965], icon: '🛍️', tip: 'Akwa · Cœur commercial' },
-    { name: 'Bonanjo (Place Gouvernement)', coords: [4.0428, 9.6885], icon: '🏛️', tip: 'Bonanjo · Quartier administratif' },
-    { name: 'Aéroport Int. de Douala', coords: [4.0118, 9.7194], icon: '✈️', tip: 'Aéroport International (DLA)' }
+    { name: 'Total Énergie Ndokoti', area: 'Ndokoti', coords: [4.0435, 9.7428], icon: '⛽', tip: 'Carrefour & Station Ndokoti · Grand hub Bendskin & Taxis' },
+    { name: 'Ancien Dalip (Akwa)', area: 'Akwa', coords: [4.0532, 9.6968], icon: '🏛️', tip: 'Repère historique Akwa · Boulevard de la Liberté' },
+    { name: 'Mobil Guinness (Bépanda)', area: 'Bépanda', coords: [4.0620, 9.7285], icon: '🏭', tip: 'Axe Guinness Cameroun & Carrefour Bépanda' },
+    { name: 'Carrefour Deux Églises (Bépanda)', area: 'Bépanda', coords: [4.0688, 9.7321], icon: '⛪', tip: 'Repère célèbre carrefour Deux Églises Bépanda' },
+    { name: 'Rond-Point Deïdo', area: 'Deido', coords: [4.0635, 9.7125], icon: '🔄', tip: 'Statue du Centenaire & Nœud stratégique de Deïdo' },
+    { name: 'Douche Municipale (Akwa)', area: 'Akwa', coords: [4.0485, 9.6952], icon: '🚿', tip: 'Repère central carrefour Douche · Boulevard de la Liberté' },
+    { name: 'Boulangerie Zepol (Akwa)', area: 'Akwa', coords: [4.0515, 9.6990], icon: '🥖', tip: 'Point de rencontre mythique 24h/24 Akwa' },
+    { name: 'Gare de Bessengue (Camrail)', area: 'Deido', coords: [4.0560, 9.7130], icon: '🚉', tip: 'Gare ferroviaire centrale Camrail Douala' },
+    { name: 'Pont du Wouri (Côté Bonabéri)', area: 'Bonabéri', coords: [4.0725, 9.6780], icon: '🌉', tip: 'Tête du pont · Sortie Ouest & Grand Ouest' },
+    { name: 'Carrefour Mutzig (Bonabéri)', area: 'Bonabéri', coords: [4.0780, 9.6620], icon: '🍻', tip: 'Carrefour commercial et populaire de Bonabéri' },
+    { name: 'Quatre Étages (Bonabéri)', area: 'Bonabéri', coords: [4.0815, 9.6540], icon: '🏢', tip: 'Repère des Quatre Étages Bonabéri' },
+    { name: 'Marché Mboppi', area: 'Bépanda', coords: [4.0478, 9.7225], icon: '🛒', tip: 'Plus grand marché de gros d\'Afrique Centrale' },
+    { name: 'Aéroport Int. de Douala (DLA)', area: 'Aéroport', coords: [4.0118, 9.7194], icon: '✈️', tip: 'Hub aérien international (DLA)' },
+    { name: 'Rond-Point Maetur (Bonamoussadi)', area: 'Bonamoussadi', coords: [4.0882, 9.7345], icon: '🔄', tip: 'Cœur résidentiel et commerces de Bonamoussadi' },
+    { name: 'Carrefour Denver (Bonamoussadi)', area: 'Bonamoussadi', coords: [4.0921, 9.7388], icon: '🚦', tip: 'Secteur branché et résidentiel de Douala 5e' },
+    { name: 'Université de Douala (ESSEC / Ange Raphaël)', area: 'Makepe', coords: [4.0782, 9.7410], icon: '🎓', tip: 'Campus universitaire et école de commerce ESSEC' },
+    { name: 'Hôpital Général de Douala (Makepe)', area: 'Makepe', coords: [4.0845, 9.7455], icon: '🏥', tip: 'Hôpital de référence et urgences Douala Nord' },
+    { name: 'Marché Central (New Bell)', area: 'New Bell', coords: [4.0325, 9.7161], icon: '🛍️', tip: 'Grand pôle commercial textiles & vivres' },
+    { name: 'Marché Sandaga (New Bell)', area: 'New Bell', coords: [4.0362, 9.7115], icon: '🥬', tip: 'Grossistes vivriers et légumes frais' },
+    { name: 'Carrefour Agip (New Bell)', area: 'New Bell', coords: [4.0392, 9.7198], icon: '🚦', tip: 'Carrefour reliant New Bell à Ndokoti' },
+    { name: 'Clinique Soppo Priso (Bonapriso)', area: 'Bonapriso', coords: [4.0315, 9.6962], icon: '🏥', tip: 'Quartier résidentiel et médical de Bonapriso' },
+    { name: 'Rue Mandessi Bell (Bali)', area: 'Bali', coords: [4.0381, 9.6953], icon: '🛣️', tip: 'Liaison historique Akwa-Bonanjo vers Koumassi' },
+    { name: 'Complexe Sportif Japoma', area: 'Japoma', coords: [3.9875, 9.8025], icon: '🏟️', tip: 'Grand stade omnisports Japoma & sortie Yaoundé' },
+    { name: 'Carrefour Cité des Palmiers', area: 'Cité des Palmiers', coords: [4.0508, 9.7558], icon: '🌴', tip: 'Zone urbaine Douala 3e & carrefour Bille' }
   ];
 
   let mapInstance = null;
@@ -119,9 +137,21 @@
         iconAnchor: [16, 16]
       });
 
+      const safeName = lm.name.replace(/'/g, "\\'");
       L.marker(lm.coords, { icon: icon })
         .addTo(mapInstance)
-        .bindPopup(`<strong>${lm.name}</strong><br><small style="color:#64748b;">${lm.tip}</small>`);
+        .bindPopup(`
+          <div class="douala-map-landmark-popup" style="text-align:left;min-width:190px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#0f172a;display:flex;align-items:center;gap:6px;">
+              <span>${lm.icon}</span> <span>${lm.name}</span>
+            </div>
+            <div style="font-size:0.75rem;color:#64748b;margin:4px 0 8px 0;">${lm.tip}</div>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="btn-popup-pin" onclick="window.focusDoualaLandmark('${safeName}', 'pickup')" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 6px;font-size:0.75rem;font-weight:600;cursor:pointer;">📍 Départ</button>
+              <button type="button" class="btn-popup-pin" onclick="window.focusDoualaLandmark('${safeName}', 'destination')" style="flex:1;background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 6px;font-size:0.75rem;font-weight:600;cursor:pointer;">🎯 Arrivée</button>
+            </div>
+          </div>
+        `);
     });
   }
 
@@ -490,10 +520,115 @@
     `;
   }
 
+  // Focus Douala Landmark with animated pan and pulsing pin
+  let landmarkHighlightMarker = null;
+
+  function focusDoualaLandmark(landmarkInput, targetField) {
+    if (!landmarkInput) return;
+
+    let targetCoords = null;
+    let landmarkObj = null;
+    let landmarkName = '';
+    let canonicalArea = '';
+
+    if (typeof landmarkInput === 'object') {
+      targetCoords = [
+        landmarkInput.lat || (landmarkInput.coords && landmarkInput.coords[0]),
+        landmarkInput.lng || (landmarkInput.coords && landmarkInput.coords[1])
+      ];
+      landmarkName = landmarkInput.name || '';
+      canonicalArea = landmarkInput.area || landmarkName;
+      landmarkObj = landmarkInput;
+    } else {
+      const query = String(landmarkInput).trim().toLowerCase();
+      // Search in DOUALA_LANDMARKS
+      for (let i = 0; i < DOUALA_LANDMARKS.length; i++) {
+        const lm = DOUALA_LANDMARKS[i];
+        if (lm.name.toLowerCase() === query || lm.name.toLowerCase().includes(query) || query.includes(lm.name.toLowerCase())) {
+          targetCoords = lm.coords;
+          landmarkName = lm.name;
+          canonicalArea = lm.area || lm.name;
+          landmarkObj = lm;
+          break;
+        }
+      }
+      // Search in DOUALA_COORDS
+      if (!targetCoords) {
+        for (const loc in DOUALA_COORDS) {
+          if (loc.toLowerCase() === query || loc.toLowerCase().includes(query)) {
+            targetCoords = DOUALA_COORDS[loc];
+            landmarkName = loc;
+            canonicalArea = loc;
+            landmarkObj = { name: loc, area: loc, icon: '📍', tip: 'Zone de Douala' };
+            break;
+          }
+        }
+      }
+    }
+
+    // Set input field if requested
+    if (targetField && canonicalArea) {
+      const field = document.getElementById(targetField);
+      if (field) {
+        field.value = canonicalArea;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+
+    // Leaflet map flyTo and pulse highlight
+    if (mapInstance && targetCoords && targetCoords[0] && targetCoords[1]) {
+      try {
+        mapInstance.flyTo(targetCoords, 15, {
+          animate: true,
+          duration: 1.2
+        });
+
+        if (landmarkHighlightMarker) {
+          mapInstance.removeLayer(landmarkHighlightMarker);
+          landmarkHighlightMarker = null;
+        }
+
+        const iconHtml = (landmarkObj && landmarkObj.icon) ? landmarkObj.icon : '📍';
+        const pulseIcon = L.divIcon({
+          className: 'custom-pulse-pin-wrapper',
+          html: `
+            <div class="landmark-pulse-container">
+              <span class="landmark-pulse-ring"></span>
+              <div class="landmark-pulse-core">${iconHtml}</div>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        });
+
+        landmarkHighlightMarker = L.marker(targetCoords, { icon: pulseIcon }).addTo(mapInstance);
+        const tipText = (landmarkObj && landmarkObj.tip) ? landmarkObj.tip : 'Repère Douala sélectionné';
+        landmarkHighlightMarker.bindPopup(`
+          <div style="text-align:left;padding:2px;">
+            <strong style="color:#0f172a;font-size:0.92rem;">${landmarkName || canonicalArea}</strong><br>
+            <span style="font-size:0.75rem;color:#64748b;">${tipText}</span>
+          </div>
+        `).openPopup();
+
+        setTimeout(() => {
+          if (landmarkHighlightMarker) {
+            mapInstance.removeLayer(landmarkHighlightMarker);
+            landmarkHighlightMarker = null;
+          }
+        }, 12000);
+      } catch (e) {
+        console.warn('Map focus error:', e);
+      }
+    }
+  }
+
   // Export functions to window
+  window.focusDoualaLandmark = focusDoualaLandmark;
   window.MboaLiftMap = {
     coords: DOUALA_COORDS,
-    landmarks: DOUALA_LANDMARKS
+    landmarks: DOUALA_LANDMARKS,
+    focusLandmark: focusDoualaLandmark
   };
 
 })();

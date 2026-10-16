@@ -195,29 +195,113 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="pickup">Pickup location (Départ)</label>
-                <input list="locationsList" id="pickup" name="pickup" required
-                       value="{{ selected_pickup or '' }}"
-                       placeholder="Type or choose (e.g. Akwa, Bonanjo, Bonabéri)">
+            <!-- Voice Search & Douala Landmark Bar -->
+            <div class="douala-slang-bar" id="doualaSlangBar">
+                <div class="slang-bar-header">
+                    <span class="slang-header-icon">🎙️</span>
+                    <div class="slang-header-text">
+                        <strong>Recherche Vocale &amp; Repères Douala</strong>
+                        <small>Parlez au micro ou cliquez un repère populaire pour le définir en 1 clic :</small>
+                    </div>
+                </div>
+                <div class="slang-chips-scroll" id="slangChipsScroll">
+                    <button type="button" class="slang-chip" data-landmark="Total Énergie Ndokoti" data-area="Ndokoti" data-lat="4.0435" data-lng="9.7428">
+                        <span class="chip-icon">⛽</span> Total Énergie Ndokoti
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Ancien Dalip (Akwa)" data-area="Akwa" data-lat="4.0532" data-lng="9.6968">
+                        <span class="chip-icon">🏛️</span> Ancien Dalip Akwa
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Mobil Guinness (Bépanda)" data-area="Bépanda" data-lat="4.0620" data-lng="9.7285">
+                        <span class="chip-icon">🏭</span> Mobil Guinness
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Carrefour Deux Églises (Bépanda)" data-area="Bépanda" data-lat="4.0688" data-lng="9.7321">
+                        <span class="chip-icon">⛪</span> Deux Églises
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Rond-Point Deïdo" data-area="Deido" data-lat="4.0635" data-lng="9.7125">
+                        <span class="chip-icon">🔄</span> Rond-Point Deïdo
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Boulangerie Zepol (Akwa)" data-area="Akwa" data-lat="4.0515" data-lng="9.6990">
+                        <span class="chip-icon">🥖</span> Boulangerie Zépol
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Marché Mboppi" data-area="Bépanda" data-lat="4.0478" data-lng="9.7225">
+                        <span class="chip-icon">🛒</span> Marché Mboppi
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Aéroport Int. de Douala (DLA)" data-area="Aéroport" data-lat="4.0118" data-lng="9.7194">
+                        <span class="chip-icon">✈️</span> Aéroport DLA
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Pont du Wouri (Côté Bonabéri)" data-area="Bonabéri" data-lat="4.0725" data-lng="9.6780">
+                        <span class="chip-icon">🌉</span> Pont du Wouri
+                    </button>
+                    <button type="button" class="slang-chip" data-landmark="Université de Douala (ESSEC / Ange Raphaël)" data-area="Makepe" data-lat="4.0782" data-lng="9.7410">
+                        <span class="chip-icon">🎓</span> Université ESSEC
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group voice-location-group">
+                <div class="location-header-row">
+                    <label for="pickup" class="form-label-bold">Point de départ (Pickup)</label>
+                    <span class="voice-status-indicator" id="pickupVoiceStatus">
+                        <span class="voice-pulse-dot"></span> <span class="voice-status-text">Micro prêt</span>
+                    </span>
+                </div>
+                <div class="voice-input-wrapper">
+                    <input list="locationsList" id="pickup" name="pickup" required
+                           value="{{ selected_pickup or '' }}"
+                           placeholder="Dites ou tapez un repère : ex. Total Ndokoti, Ancien Dalip, Akwa..."
+                           autocomplete="off">
+                    <button type="button" class="voice-mic-btn" id="voiceBtnPickup" title="Parler pour dicter le lieu de départ" aria-label="Recherche vocale départ">
+                        <span class="mic-icon">🎙️</span>
+                        <span class="mic-waves" aria-hidden="true"><span></span><span></span><span></span></span>
+                    </button>
+                </div>
+                <!-- Dynamic Recognition Badge -->
+                <div class="landmark-recognition-badge" id="pickupLandmarkBadge" style="display:none;"></div>
+                <!-- Landmark suggestions dropdown -->
+                <div class="landmark-suggestions-dropdown" id="pickupSuggestions" style="display:none;"></div>
+
                 <datalist id="locationsList">
                     {% for loc in locations %}
                     <option value="{{ loc }}">
                     {% endfor %}
+                    {% for lm in douala_landmarks %}
+                    <option value="{{ lm.name }}">
+                    {% endfor %}
                 </datalist>
-                <small>Choisissez parmi les quartiers majeurs de Douala.</small>
+                <small class="location-input-hint">Ex: <em>"Dépose-moi à Total Ndokoti"</em>, <em>"Mobil Guinness"</em>, ou quartier officiel.</small>
             </div>
 
-            <div class="form-group">
-                <label for="destination">Destination (Arrivée)</label>
-                <input list="locationsList2" id="destination" name="destination" required
-                       value="{{ selected_destination or '' }}"
-                       placeholder="Type or choose (e.g. Bonamoussadi, Aéroport, Ndokoti)">
+            <div class="form-group voice-location-group">
+                <div class="location-header-row">
+                    <label for="destination" class="form-label-bold">Point d'arrivée (Destination)</label>
+                    <span class="voice-status-indicator" id="destVoiceStatus">
+                        <span class="voice-pulse-dot"></span> <span class="voice-status-text">Micro prêt</span>
+                    </span>
+                </div>
+                <div class="voice-input-wrapper">
+                    <input list="locationsList2" id="destination" name="destination" required
+                           value="{{ selected_destination or '' }}"
+                           placeholder="Dites ou tapez un repère : ex. Deux Églises, Aéroport DLA, Bonamoussadi..."
+                           autocomplete="off">
+                    <button type="button" class="voice-mic-btn" id="voiceBtnDestination" title="Parler pour dicter la destination" aria-label="Recherche vocale destination">
+                        <span class="mic-icon">🎙️</span>
+                        <span class="mic-waves" aria-hidden="true"><span></span><span></span><span></span></span>
+                    </button>
+                </div>
+                <!-- Dynamic Recognition Badge -->
+                <div class="landmark-recognition-badge" id="destLandmarkBadge" style="display:none;"></div>
+                <!-- Landmark suggestions dropdown -->
+                <div class="landmark-suggestions-dropdown" id="destSuggestions" style="display:none;"></div>
+
                 <datalist id="locationsList2">
                     {% for loc in locations %}
                     <option value="{{ loc }}">
                     {% endfor %}
+                    {% for lm in douala_landmarks %}
+                    <option value="{{ lm.name }}">
+                    {% endfor %}
                 </datalist>
+                <small class="location-input-hint">Reconnaissance instantanée des carrefours, stations, marchés et repères doualais.</small>
             </div>
 
             <div class="form-group" id="passengersGroup">
@@ -570,6 +654,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initVehiclePicker();
     initFareCalculator();
     initNearbyDrivers();
+    if (typeof initVoiceSearchAndLandmarks === 'function') {
+        initVoiceSearchAndLandmarks();
+    }
 });
 
 function initVehiclePicker() {

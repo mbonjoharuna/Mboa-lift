@@ -3579,6 +3579,496 @@
   text-align: left;
 }
 
+/* ============================================================
+   Feature #5: 🎙️ Voice Search & Douala Landmark Recognition
+   Strict left alignment across all components.
+   ============================================================ */
+
+/* Douala Slang & Landmarks Bar */
+.douala-slang-bar {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.slang-bar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.slang-header-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.slang-header-text {
+  text-align: left;
+}
+
+.slang-header-text strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+  text-align: left;
+}
+
+.slang-header-text small {
+  display: block;
+  font-size: 0.76rem;
+  color: #64748b;
+  text-align: left;
+}
+
+.slang-chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.slang-chips-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.slang-chips-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.slang-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.slang-chip:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+  transform: translateY(-1px);
+}
+
+.slang-chip:active {
+  transform: translateY(0);
+}
+
+.chip-icon {
+  font-size: 0.85rem;
+}
+
+/* Voice Location Group & Header */
+.voice-location-group {
+  position: relative;
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.location-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.location-header-row label {
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.voice-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.voice-status-indicator.listening {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.voice-status-indicator.error {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.voice-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  transition: background 0.2s;
+}
+
+.voice-status-indicator.listening .voice-pulse-dot {
+  background: #ef4444;
+  animation: mic-radar 1.2s infinite;
+}
+
+.voice-status-indicator.error .voice-pulse-dot {
+  background: #f97316;
+}
+
+@keyframes mic-radar {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Voice Input Wrapper */
+.voice-input-wrapper {
+  position: relative;
+  width: 100%;
+  text-align: left;
+}
+
+.voice-input-wrapper input {
+  width: 100%;
+  padding-right: 48px !important;
+  text-align: left;
+}
+
+.voice-mic-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+  padding: 0;
+}
+
+.voice-mic-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.voice-mic-btn .mic-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.voice-mic-btn .mic-waves {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 16px;
+}
+
+.voice-mic-btn .mic-waves span {
+  display: block;
+  width: 3px;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 2px;
+  animation: wave-bar 0.9s ease-in-out infinite alternate;
+}
+
+.voice-mic-btn .mic-waves span:nth-child(2) {
+  animation-delay: 0.2s;
+  height: 70%;
+}
+
+.voice-mic-btn .mic-waves span:nth-child(3) {
+  animation-delay: 0.4s;
+  height: 90%;
+}
+
+@keyframes wave-bar {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
+.voice-mic-btn.listening {
+  background: #ef4444 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+  animation: mic-btn-pulse 1.4s infinite;
+}
+
+.voice-mic-btn.listening .mic-icon {
+  display: none;
+}
+
+.voice-mic-btn.listening .mic-waves {
+  display: flex;
+}
+
+@keyframes mic-btn-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Landmark Recognition Badge */
+.landmark-recognition-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  text-align: left;
+  animation: badge-fade-in 0.25s ease-out;
+}
+
+@keyframes badge-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landmark-recognition-badge .badge-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.landmark-recognition-badge .badge-text-group {
+  flex: 1;
+  text-align: left;
+}
+
+.landmark-recognition-badge .badge-sub {
+  display: block;
+  font-size: 0.7rem;
+  color: #166534;
+  font-weight: 500;
+  text-align: left;
+}
+
+.landmark-recognition-badge .badge-title {
+  display: block;
+  font-size: 0.84rem;
+  color: #14532d;
+  font-weight: 700;
+  text-align: left;
+}
+
+.landmark-recognition-badge .badge-arrow {
+  color: #15803d;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.landmark-recognition-badge .badge-canonical {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #86efac;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.location-input-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: left;
+}
+
+/* Landmark Suggestions Autocomplete Dropdown */
+.landmark-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  margin-top: 4px;
+  z-index: 50;
+  max-height: 280px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.landmark-suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-align: left;
+}
+
+.landmark-suggestions-header .btn-close-suggestions {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.landmark-suggestions-header .btn-close-suggestions:hover {
+  color: #0f172a;
+}
+
+.landmark-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.landmark-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.landmark-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.landmark-suggestion-item:hover {
+  background: #f8fafc;
+}
+
+.landmark-suggestion-item .suggestion-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.landmark-suggestion-item .suggestion-info {
+  flex: 1;
+  text-align: left;
+}
+
+.landmark-suggestion-item .suggestion-name {
+  display: block;
+  font-size: 0.84rem;
+  color: #0f172a;
+  font-weight: 700;
+  text-align: left;
+}
+
+.landmark-suggestion-item .suggestion-tip {
+  display: block;
+  font-size: 0.74rem;
+  color: #64748b;
+  text-align: left;
+}
+
+.landmark-suggestion-item .suggestion-area-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Pulsing Leaflet Pin on Landmark Focus */
+.custom-pulse-pin-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+.landmark-pulse-container {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landmark-pulse-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #f59e0b;
+  animation: pulse-ring-expand 1.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.landmark-pulse-core {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+@keyframes pulse-ring-expand {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
 
 
 
